@@ -1,0 +1,14 @@
+#this was tested with nodejs v20
+
+#build project for development
+    npm run build:dev
+
+#run web server
+    npm run serve
+    
+#development server will run on port 3000, use it for react router to work correctly when going to urls directly
+
+#see package.json under section "scripts" for more commands
+
+#solution for "too many openfile descriptors" in Ubuntu
+    https://stackoverflow.com/a/51853966

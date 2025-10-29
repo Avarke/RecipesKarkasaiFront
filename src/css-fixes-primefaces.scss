@@ -1,0 +1,37 @@
+//hide borders of internal input in password prompt, fix width
+span.p-calendar.p-inputwrapper input.p-inputtext {
+    border: none;
+    width: 100%;
+}
+
+//remove padding around internal input in password prompt
+span.p-calendar.p-inputwrapper {
+    padding: 0px;
+}
+
+//hide borders of internal input in password prompt, fix width
+div.p-password.p-inputwrapper input.p-password-input {
+    border: none;
+    width: 100%;
+}
+
+//remove padding around internal input in password prompt
+div.p-password.p-inputwrapper {
+    padding: 0px;
+}
+
+//make datatables with fixes scrollable
+div.p-datatable.with-fixes {
+    max-height: 100%;
+    overflow: scroll;
+}
+
+//make table head in datatables with fixes sticky
+div.p-datatable.with-fixes table {
+    position: relative;
+}
+
+div.p-datatable.with-fixes table thead th {
+    position: sticky;
+    top: 0px;
+}

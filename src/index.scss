@@ -1,0 +1,12 @@
+//import common stuff, to make sure it is always included in the build
+@import "imports.scss";
+
+//import CSS fixes, if any
+@import "css-fixes-primefaces.scss";
+
+//make sure page content occupies full viewport
+html, body {
+	height: 100%;
+	width: 100%;
+	margin: 0;
+}

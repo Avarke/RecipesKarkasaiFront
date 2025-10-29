@@ -1,0 +1,47 @@
+$brand-color: #ff7043;
+$bg-color: #f8f9fa;
+$hover-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+
+body {
+  background-color: $bg-color;
+}
+
+.navbar-brand {
+  font-weight: bold;
+  color: $brand-color !important;
+}
+
+.recipe-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: $hover-shadow;
+  }
+
+  .recipe-img {
+    height: 200px;
+    object-fit: cover;
+  }
+}
+
+// search input
+.search-input {
+  width: 250px;
+
+  @media (max-width: 992px) {
+    width: 100%;
+    margin-top: 10px;
+  }
+}
+
+// 🔹 Card base
+.card {
+  border-radius: 10px;
+
+  .card-body {
+    h3 {
+      font-weight: 600;
+    }
+  }
+}

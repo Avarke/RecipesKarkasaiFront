@@ -1,0 +1,19 @@
+//these are common imports, they can be made visible in other sass files via '@use "imports.scss"'
+
+//the '@use "imports.scss"' works, because './src' is set as import search path for sass
+//styles in 'webpack.config.js'
+
+//
+@import "~bootstrap/scss/bootstrap";
+
+//import fontawesome
+$fa-font-path: "@fortawesome/fontawesome-free/webfonts";
+@import "@fortawesome/fontawesome-free/scss/fontawesome.scss";
+@import "@fortawesome/fontawesome-free/scss/solid.scss";
+
+//this will select theme for PrimeFaces
+@import "primereact/resources/themes/bootstrap4-light-blue/theme.css";
+
+//
+@import "primereact/resources/primereact.min.css";
+@import "primeicons/primeicons.css";

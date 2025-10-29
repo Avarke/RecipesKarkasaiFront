@@ -1,0 +1,18 @@
+{
+	"compilerOptions": {
+		"allowSyntheticDefaultImports": true,
+		"skipLibCheck": true,
+
+		"lib": ["ES2022", "DOM"],
+
+		"moduleResolution": "bundler",		
+		"module": "ES2022",
+		"target": "ES2022",
+		"allowJs": true,
+
+		"jsx": "react-jsx"
+	},
+	"files": [
+		"src/index.tsx"
+	]
+}
