@@ -9,7 +9,6 @@ import appState from './appState';
 import './App.scss';
 
 
-import Home from '../index/Home';
 import NavMenu from '../navmenu/NavMenu';
 import Footer from '../footer/Footer';
 import About from '../about/About';
@@ -100,11 +99,11 @@ function App() {
 						</>
 					}					
 				</Routes>
-				{ !appState.isLoggedIn.value &&
-					<div className="d-flex flex-column h-100 justify-content-center align-items-center">
-						<span className="alert alert-primary mx-2">Please, log in to see content.</span>
-					</div>
-				}
+				{/*{ !appState.isLoggedIn.value &&*/}
+				{/*	<div className="d-flex flex-column h-100 justify-content-center align-items-center">*/}
+				{/*		<span className="alert alert-primary mx-2">Please, log in to see content.</span>*/}
+				{/*	</div>*/}
+				{/*}*/}
 			</div>
 			<Footer/>
 		</Router>;

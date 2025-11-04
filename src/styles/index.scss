@@ -1,8 +1,8 @@
 //import common stuff, to make sure it is always included in the build
-@import "imports.scss";
+@use './imports' as *;
 
 //import CSS fixes, if any
-@import "css-fixes-primefaces.scss";
+@import "./css-fixes-primefaces";
 
 //make sure page content occupies full viewport
 html, body {

@@ -17,7 +17,7 @@ function NavMenu() {
                 <div className="container">
                     {/* Brand */}
                     <NavLink to="/" className="navbar-brand">
-                        🍴 MyRecipes
+                        <i className="bi bi-fork-knife"></i> MyRecipes
                     </NavLink>
 
                     {/* Toggler for small screens */}
@@ -59,27 +59,18 @@ function NavMenu() {
                                     Categories
                                 </a>
                                 <ul className="dropdown-menu" aria-labelledby="categoryDropdown">
-                                    <li>
-                                        <a className="dropdown-item" href="#">
-                                            Breakfast
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a className="dropdown-item" href="#">
-                                            Lunch
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a className="dropdown-item" href="#">
-                                            Dinner
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a className="dropdown-item" href="#">
-                                            Desserts
-                                        </a>
-                                    </li>
+                                    {["Breakfast", "Lunch", "Dinner", "Desserts"].map((cat) => (
+                                        <li key={cat}>
+                                            <NavLink
+                                                className="dropdown-item"
+                                                to={`/recipes?category=${encodeURIComponent(cat)}`}
+                                            >
+                                                {cat}
+                                            </NavLink>
+                                        </li>
+                                    ))}
                                 </ul>
+
                             </li>
 
                             <li className="nav-item">

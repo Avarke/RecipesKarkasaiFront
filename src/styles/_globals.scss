@@ -1,0 +1,19 @@
+@use './variables' as *;
+
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  background-color: $bg-color;
+  color: $text-color;
+  font-family: 'Poppins', sans-serif;
+}
+
+a {
+  color: $brand-color;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

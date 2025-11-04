@@ -1,12 +1,4 @@
-@use "imports.scss";
-
-$brand-color: #ff7043;
-$bg-color: #f8f9fa;
-$hover-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-
-body {
-  background-color: $bg-color;
-}
+@use '../styles/imports' as *;
 
 .navbar-brand {
   font-weight: bold;
@@ -14,12 +6,7 @@ body {
 }
 
 .recipe-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: $hover-shadow;
-  }
+  @include card-hover;
 
   .recipe-img {
     height: 200px;
@@ -27,7 +14,6 @@ body {
   }
 }
 
-// search input
 .search-input {
   width: 250px;
 
@@ -37,9 +23,8 @@ body {
   }
 }
 
-// 🔹 Card base
 .card {
-  border-radius: 10px;
+  border-radius: $border-radius;
 
   .card-body {
     h3 {
@@ -47,3 +32,31 @@ body {
     }
   }
 }
+
+
+.dropdown-menu {
+  --bs-dropdown-bg: #fff !important;
+  --bs-dropdown-link-color: $text-color !important;
+  --bs-dropdown-link-hover-bg: rgba($brand-color, 0.1) !important;
+  --bs-dropdown-link-hover-color: $brand-color !important;
+  --bs-dropdown-link-active-bg: $brand-color !important;
+  --bs-dropdown-link-active-color: $brand-color !important;
+  --bs-dropdown-border-color: rgba(0, 0, 0, 0.1) !important;
+}
+.dropdown-item {
+  color: $text-color;
+  background: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover,
+  &:focus {
+    background-color: lighten($brand-color, 45%);
+    color: $text-color;
+  }
+
+  &:active {
+    background-color: $brand-color;
+    color: #fff;
+  }
+}
+
