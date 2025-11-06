@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import Auth from '../auth/Auth';
 
 import './NavMenu.scss'
+import appState from "../app/appState";
 
 
 /**
@@ -46,33 +47,6 @@ function NavMenu() {
                                     Home
                                 </NavLink>
                             </li>
-
-                            <li className="nav-item dropdown">
-                                <a
-                                    className="nav-link dropdown-toggle"
-                                    href="#"
-                                    id="categoryDropdown"
-                                    role="button"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                >
-                                    Categories
-                                </a>
-                                <ul className="dropdown-menu" aria-labelledby="categoryDropdown">
-                                    {["Breakfast", "Lunch", "Dinner", "Desserts"].map((cat) => (
-                                        <li key={cat}>
-                                            <NavLink
-                                                className="dropdown-item"
-                                                to={`/recipes?category=${encodeURIComponent(cat)}`}
-                                            >
-                                                {cat}
-                                            </NavLink>
-                                        </li>
-                                    ))}
-                                </ul>
-
-                            </li>
-
                             <li className="nav-item">
                                 <NavLink
                                     to="/about"
@@ -82,6 +56,17 @@ function NavMenu() {
                                 >
                                     About Us
                                 </NavLink>
+                            </li>
+
+                            <li className="nav-item">
+                                {appState.isLoggedIn.value && (
+                                    <NavLink to="/recipesCrud/new" className={({ isActive }) =>
+                                        "nav-link " + (isActive ? "active" : "")
+                                    }
+                                    >
+                                        + New Recipe
+                                    </NavLink>
+                                )}
                             </li>
                         </ul>
 
@@ -98,10 +83,13 @@ function NavMenu() {
                             </button>
                         </form>
 
+
+
+                        <Auth />
                         {/* Login button (replace later with Auth if needed) */}
-                        <NavLink to="/login" className="btn btn-outline-primary">
-                            Log In
-                        </NavLink>
+                        {/*<NavLink to="/login" className="btn btn-outline-primary">*/}
+                        {/*    Log In*/}
+                        {/*</NavLink>*/}
                     </div>
                 </div>
             </nav>

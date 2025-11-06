@@ -1,0 +1,44 @@
+@use '../styles/imports' as *;
+
+
+
+.recipe-details-container {
+  .recipe-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr; // image : text ratio
+    grid-column-gap: 2rem;
+    align-items: start;
+  }
+
+  .recipe-image {
+    grid-row: 1 / span 20; // makes image align with tall text
+    width: 100%;
+    max-width: 400px;
+    object-fit: cover;
+    border-radius: 0.5rem;
+  }
+
+  .recipe-description {
+    white-space: pre-line; // keeps line breaks from DB
+    line-height: 1.6;
+  }
+
+  .no-image {
+    width: 100%;
+    max-width: 400px;
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    color: #999;
+    font-size: 0.9rem;
+  }
+
+  h2 {
+    font-weight: 700;
+    color: $brand-color;
+    margin-bottom: 1rem;
+  }
+}

@@ -14,6 +14,8 @@ import Footer from '../footer/Footer';
 import About from '../about/About';
 import EntityCrud from '../entityCrud/EntityCrud';
 import RecipesList from '../recipes/RecipesList';
+import RecipeDetails from '../recipes/RecipeDetails';
+import RecipeCrud from "../recipesCrud/RecipeCrud";
 import { setAuthenticatingBackend } from './backend';
 
 
@@ -88,14 +90,16 @@ function App() {
 		<Router>
 			<NavMenu/>
 			<Toast ref={toastRef} position="top-right"/>
-			<div className="shadow-sm bg-body rounded flex-grow-1 overflow-hidden p-1">
+			<div className="shadow-sm bg-body rounded flex-grow-1 p-1">
 				<Routes>
                     <Route path="/about" element={<About />} />  {/* About page */}
                     <Route path="/" element={<Navigate to="/recipes" />} />
                     <Route path="/recipes" element={<RecipesList />} />
+                    <Route path="/recipes/:id" element={<RecipeDetails />} />
                     { appState.isLoggedIn.value &&
-						<>						
-						<Route path="/entityCrud/*" element={<EntityCrud/>}/>
+						<>
+                            <Route path="/recipesCrud/*" element={<RecipeCrud />} />
+                            {/*<Route path="/entityCrud/*" element={<EntityCrud/>}/>*/}
 						</>
 					}					
 				</Routes>

@@ -8,6 +8,8 @@ import { Password } from 'primereact/password';
 import config from '../app/config';
 import appState from '../app/appState';
 import backend, { setAuthenticatingBackend } from '../app/backend';
+import '../navmenu/NavMenu.scss'
+
 
 import { LogInResponse } from './models';
 
@@ -36,7 +38,6 @@ class State
 
 	/** Indicates if login has failed. */
 	isLoginErr : boolean = false;
-
 
 	/**
 	 * Resets error flags to off.
@@ -148,13 +149,13 @@ function LogIn() {
 		<>
 		<button
 			type="button"
-			className="btn btn-primary btn-sm"
+			className="btn btn-outline-primary"
 			onClick={() => update(() => state.isDialogVisible = true)}
 			>Log in</button>
 		<Dialog
 			visible={state.isDialogVisible}
 			onHide={() => update(() => state.isDialogVisible = false)}
-			header={<span className="me-2">Enter your crendentials, please.</span>}
+			header={<span className="me-2">Log in</span>}
 			style={{width: "50ch"}}
 			>
 			{state.isLoginErr &&

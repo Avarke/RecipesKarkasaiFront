@@ -55,7 +55,7 @@ function Auth() {
 		{ !appState.isLoggedIn.value &&
 			<>
 			<LogIn/>
-			<DevelopmentLogIn/>
+			{/*<DevelopmentLogIn/>*/}
 			</>
 		}
 		{ appState.isLoggedIn.value &&

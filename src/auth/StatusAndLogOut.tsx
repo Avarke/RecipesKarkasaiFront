@@ -4,6 +4,7 @@ import config from '../app/config';
 import appState from '../app/appState';
 import backend, { setNonAuthenticatingBackend } from '../app/backend';
 
+import '../navmenu/NavMenu.scss'
 
 /**
  * Log-out section in nav bar. React component.
@@ -44,14 +45,16 @@ function StatusAndLogOut() {
 	//render component html
 	let html = 
 		<>
-		<span className="d-flex align-items-center">
-			<span>Welcome, {appState.userTitle}</span>
-			<button 
-				type="button"
-				className="btn btn-primary btn-sm ms-2" 
-				onClick={() => onLogOut()}
-				>Log out</button>
-		</span>
+            <div className="d-flex align-items-center gap-3">
+                <span className="user-status">Welcome, {appState.userTitle}</span>
+                <button
+                    type="button"
+                    className="btn btn-outline-primary"
+                    onClick={() => onLogOut()}
+                >
+                    Log out
+                </button>
+            </div>
 		</>;
 
 	//

@@ -8,7 +8,7 @@ function Footer() {
         <footer className="footer mt-auto py-3 bg-light border-top text-center">
             <div className="container">
         <span className="text-muted">
-          © {new Date().getFullYear()} MyRecipes — Made with ❤️ in Lithuania
+          © {new Date().getFullYear()} MyRecipes — Lithuania
         </span>
             </div>
         </footer>

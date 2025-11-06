@@ -1,62 +1,79 @@
 @use '../styles/imports' as *;
 
-.navbar-brand {
-  font-weight: bold;
-  color: $brand-color !important;
-}
+.navbar {
+  background-color: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: none;
+  padding: 0.75rem 2rem;
 
-.recipe-card {
-  @include card-hover;
-
-  .recipe-img {
-    height: 200px;
-    object-fit: cover;
+  .navbar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
   }
-}
 
-.search-input {
-  width: 250px;
-
-  @media (max-width: 992px) {
-    width: 100%;
-    margin-top: 10px;
+  .navbar-brand {
+    font-weight: 700;
+    color: $brand-color;
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
   }
-}
 
-.card {
-  border-radius: $border-radius;
-
-  .card-body {
-    h3 {
-      font-weight: 600;
+  .navbar-nav {
+    .nav-link {
+      font-weight: 500;
+      color: #222;
+      &:hover {
+        color: $brand-color;
+      }
     }
   }
-}
 
-
-.dropdown-menu {
-  --bs-dropdown-bg: #fff !important;
-  --bs-dropdown-link-color: $text-color !important;
-  --bs-dropdown-link-hover-bg: rgba($brand-color, 0.1) !important;
-  --bs-dropdown-link-hover-color: $brand-color !important;
-  --bs-dropdown-link-active-bg: $brand-color !important;
-  --bs-dropdown-link-active-color: $brand-color !important;
-  --bs-dropdown-border-color: rgba(0, 0, 0, 0.1) !important;
-}
-.dropdown-item {
-  color: $text-color;
-  background: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
-
-  &:hover,
-  &:focus {
-    background-color: lighten($brand-color, 45%);
-    color: $text-color;
+  form {
+    display: flex;
+    align-items: center;
   }
 
-  &:active {
-    background-color: $brand-color;
-    color: #fff;
+  /* ✅ Make all navbar buttons sharp */
+  .btn {
+    border-radius: 0;
+    font-weight: 500;
+    padding: 0.4rem 0.9rem;
+    transition: all 0.2s ease;
+
+    &:focus {
+      box-shadow: none;
+    }
+  }
+
+  .btn-outline-success {
+    border-color: #000;
+    color: #000;
+    background-color: transparent;
+
+    &:hover {
+      background-color: #000;
+      color: #fff;
+    }
+  }
+
+  .btn-outline-primary {
+    border-color: $brand-color;
+    color: $brand-color;
+    background-color: transparent;
+
+    &:hover {
+      background-color: $brand-color;
+      color: #fff;
+    }
+  }
+
+  .search-input {
+    border-radius: 0;
   }
 }
-
