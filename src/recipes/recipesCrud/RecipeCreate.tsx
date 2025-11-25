@@ -8,9 +8,9 @@ import { FileUpload } from "primereact/fileupload";
 import { MultiSelect } from "primereact/multiselect";
 import { useEffect } from "react";
 
-import backend from "../app/backend";
-import config from "../app/config";
-import { notifySuccess } from "../app/notify";
+import backend from "../../app/backend";
+import config from "../../app/config";
+import { notifySuccess } from "../../app/notify";
 
 /**
  * Component state class.
@@ -27,10 +27,12 @@ class State {
 
     isTitleErr: boolean = false;
     isSaveErr: boolean = false;
+    isCategoryErr: boolean = false;
 
     resetErrors() {
         this.isTitleErr = false;
         this.isSaveErr = false;
+        this.isCategoryErr = false;
     }
 
     shallowClone(): State {
@@ -95,13 +97,14 @@ function RecipeCreate() {
             state.resetErrors();
 
             if (state.title.trim() === "") state.isTitleErr = true;
-            if (state.isTitleErr) return;
+            if (state.categoryIds.length === 0) state.isCategoryErr = true;
+
+            if (state.isTitleErr || state.isCategoryErr) return;
 
             const recipe = {
                 title: state.title,
                 description: state.description,
                 status: state.status,
-                average_Rating: state.average_Rating,
                 imageBase64: state.imageBase64,
                 categoryIds: state.categoryIds,
             };
@@ -156,16 +159,7 @@ function RecipeCreate() {
                         onChange={(e) => update(() => (state.description = e.target.value))}
                     />
 
-                    {/* Rating */}
-                    <label htmlFor="rating" className="form-label mt-3">
-                        Rating:
-                    </label>
-                    <Rating
-                        id="rating"
-                        stars={5}
-                        value={state.average_Rating}
-                        onChange={(e) => update(() => (state.average_Rating = e.value))}
-                    />
+
 
                     {/* Status dropdown */}
                     <label htmlFor="status" className="form-label mt-3">
@@ -182,18 +176,27 @@ function RecipeCreate() {
                     {state.categoriesList.length === 0 ? (
                         <p>Loading categories...</p>
                     ) : (
-                        <MultiSelect
-                            id="categories"
-                            value={state.categoryIds}
-                            options={state.categoriesList}
-                            onChange={(e) => update(() => (state.categoryIds = e.value))}
-                            optionLabel="label"
-                            placeholder="Select one or more categories"
-                            display="chip"
-                            filter
-                            filterPlaceholder="Search categories..."
-                            className="w-100"
-                        />
+                        <>
+                            <MultiSelect
+                                id="categories"
+                                value={state.categoryIds}
+                                options={state.categoriesList}
+                                onChange={(e) => update(() => (state.categoryIds = e.value))}
+                                optionLabel="label"
+                                placeholder="Select one or more categories"
+                                display="chip"
+                                filter
+                                filterPlaceholder="Search categories..."
+                                className={
+                                    "w-100 " + (state.isCategoryErr ? "is-invalid" : "")
+                                }
+                            />
+                            {state.isCategoryErr && (
+                                <div className="invalid-feedback d-block">
+                                    Please select at least one category.
+                                </div>
+                            )}
+                        </>
                     )}
 
                     {/* Image upload */}

@@ -60,11 +60,13 @@ function NavMenu() {
 
                             <li className="nav-item">
                                 {appState.isLoggedIn.value && (
-                                    <NavLink to="/recipesCrud/new" className={({ isActive }) =>
-                                        "nav-link " + (isActive ? "active" : "")
-                                    }
+                                    <NavLink
+                                        to="/admin/recipes"
+                                        className={({ isActive }) =>
+                                            "nav-link " + (isActive ? "active" : "")
+                                        }
                                     >
-                                        + New Recipe
+                                        Admin Dashboard
                                     </NavLink>
                                 )}
                             </li>

@@ -15,9 +15,9 @@ import About from '../about/About';
 import EntityCrud from '../entityCrud/EntityCrud';
 import RecipesList from '../recipes/RecipesList';
 import RecipeDetails from '../recipes/RecipeDetails';
-import RecipeCrud from "../recipesCrud/RecipeCrud";
+import RecipeCrud from "../recipes/recipesCrud/RecipeCrud";
 import { setAuthenticatingBackend } from './backend';
-
+import RecipeCategoryCrud from "../categories/categoryCrud/CategoryCrud";
 
 class State {
 	isInitialized : boolean = false;
@@ -31,6 +31,10 @@ class State {
 	}
 }
 
+
+function CategoryCrud() {
+    return null;
+}
 
 /**
  * Application. React component.
@@ -98,7 +102,20 @@ function App() {
                     <Route path="/recipes/:id" element={<RecipeDetails />} />
                     { appState.isLoggedIn.value &&
 						<>
-                            <Route path="/recipesCrud/*" element={<RecipeCrud />} />
+                            <Route path="/admin/recipes/*" element={<RecipeCrud />} />
+                            <Route path="/admin/categories/*" element={<RecipeCategoryCrud />} />
+                            {/*<Route path="/admin/reviews/*" element={<ReviewCrud />} />*/}
+
+
+
+
+                            {/*<Route path="/recipesCrud/*" element={<RecipeCrud />} />*/}
+                            {/*<Route path="/categoriesCrud/*" element={<CategoryCrud />} />*/}
+
+                            {/*<Route path="/admin/recipes" element={<AdminRecipesList />} />*/}
+                            {/*<Route path="/admin/categories" element={<AdminCategoriesList />} />*/}
+                            {/*<Route path="/admin/reviews" element={<AdminReviewsList />} />*/}
+                            {/*<Route path="/recipesCrud/edit/:id" element={<RecipeEdit />} />*/}
                             {/*<Route path="/entityCrud/*" element={<EntityCrud/>}/>*/}
 						</>
 					}					

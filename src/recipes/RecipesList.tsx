@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import backend from "../app/backend";
 import config from "../app/config";
@@ -14,7 +14,7 @@ interface RecipeVm {
     status: string;
     average_Rating: number;
     categories: string[];
-    imageBase64?: string | null;   // ✅ new
+    imageBase64?: string | null;
 }
 
 function RecipesList() {
@@ -26,6 +26,7 @@ function RecipesList() {
 
 
     const location = useLocation();
+    const navigate = useNavigate();
 
 
     // extract ?category=... from the URL
@@ -36,27 +37,14 @@ function RecipesList() {
         setLoading(true);
 
         backend
-            .get(config.backendUrl + "/recipes")
+            .get(config.backendUrl + "/recipes", {
+                params: {
+                    category: selectedCategory || undefined,
+                    sortBy: sortBy !== "default" ? sortBy : undefined,
+                },
+            })
             .then((response) => {
-                let allRecipes = response.data as RecipeVm[];
-
-                if (selectedCategory) {
-                    allRecipes = allRecipes.filter((r) =>
-                        r.categories.includes(selectedCategory)
-                    );
-                }
-
-                if (sortBy === "rating") {
-                    allRecipes = [...allRecipes].sort(
-                        (a, b) => b.average_Rating - a.average_Rating
-                    );
-                } else if (sortBy === "title") {
-                    allRecipes = [...allRecipes].sort((a, b) =>
-                        a.title.localeCompare(b.title)
-                    );
-                }
-
-                setRecipes(allRecipes);
+                setRecipes(response.data as RecipeVm[]);
             })
             .catch((err) => {
                 console.error("Failed to load recipes:", err);
@@ -87,9 +75,18 @@ function RecipesList() {
                             value={selectedCategory || ""}
                             onChange={(e) => {
                                 const cat = e.target.value;
-                                window.location.href = cat
-                                    ? `/recipes?category=${encodeURIComponent(cat)}`
-                                    : "/recipes";
+                                const params = new URLSearchParams(location.search);
+
+                                if (cat) {
+                                    params.set("category", cat);
+                                } else {
+                                    params.delete("category");
+                                }
+
+                                navigate({
+                                    pathname: "/recipes",
+                                    search: params.toString(),
+                                });
                             }}
                         >
                             <option value="">All</option>
@@ -107,7 +104,23 @@ function RecipesList() {
                             id="sort"
                             className="form-select form-select-sm w-auto"
                             value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as "default" | "rating" | "title")}
+                            onChange={(e) => {
+                                const value = e.target.value as "default" | "rating" | "title";
+                                setSortBy(value);
+
+                                const params = new URLSearchParams(location.search);
+
+                                if (value === "default") {
+                                    params.delete("sortBy");
+                                } else {
+                                    params.set("sortBy", value);
+                                }
+
+                                navigate({
+                                    pathname: "/recipes",
+                                    search: params.toString(),
+                                });
+                            }}
                         >
                             <option value="default">Default</option>
                             <option value="rating">Rating</option>
