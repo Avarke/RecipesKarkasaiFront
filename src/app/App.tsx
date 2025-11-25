@@ -18,6 +18,7 @@ import RecipeDetails from '../recipes/RecipeDetails';
 import RecipeCrud from "../recipes/recipesCrud/RecipeCrud";
 import { setAuthenticatingBackend } from './backend';
 import RecipeCategoryCrud from "../categories/categoryCrud/CategoryCrud";
+import ReviewCrud from "../reviews/reviewCrud/ReviewCrud";
 
 class State {
 	isInitialized : boolean = false;
@@ -104,7 +105,7 @@ function App() {
 						<>
                             <Route path="/admin/recipes/*" element={<RecipeCrud />} />
                             <Route path="/admin/categories/*" element={<RecipeCategoryCrud />} />
-                            {/*<Route path="/admin/reviews/*" element={<ReviewCrud />} />*/}
+                            <Route path="/admin/reviews/*" element={<ReviewCrud />} />
 
 
 

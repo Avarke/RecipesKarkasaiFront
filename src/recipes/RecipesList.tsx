@@ -136,7 +136,7 @@ function RecipesList() {
                 <div className="row g-4">
                     {recipes.map((recipe) => (
                         <div key={recipe.id} className="col-md-4 mb-4">
-                            <div className="recipe-card card">
+                            <div className="recipe-card card h-100">
 
                                 {recipe.imageBase64 && (
                                     <img
