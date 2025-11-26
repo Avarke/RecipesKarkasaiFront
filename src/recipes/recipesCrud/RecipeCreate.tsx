@@ -11,6 +11,16 @@ import { notifySuccess } from "../../app/notify";
 /**
  * Component state class.
  */
+
+type IngredientFormRow = {
+    ingredientId: number | null;
+    ingredientName: string;
+    quantity: string;
+    unit: string;
+    ingredientNameError?: string | null; // NEW
+};
+
+
 class State {
     title: string = "";
     description: string = "";
@@ -21,12 +31,24 @@ class State {
 
     categoriesList: { label: string; value: number }[] = [];
 
-    // client-side errors
-    isTitleErr: boolean = false;
-    isSaveErr: boolean = false;
-    isCategoryErr: boolean = false;
+    // NEW → ingredients being edited
+    // ingredients: {
+    //     ingredientId: number | null;
+    //     ingredientName: string;
+    //     quantity: string;
+    //     unit: string;
+    //
+    // }[] = [];
 
-    // backend validation messages
+    ingredients: IngredientFormRow[] = [];
+
+    ingredientOptions: { label: string; value: number }[] = []; // dropdown list
+
+    // client-side errors
+    isTitleErr = false;
+    isSaveErr = false;
+    isCategoryErr = false;
+
     titleErrorMsg: string | null = null;
     descriptionErrorMsg: string | null = null;
     categoryIdsErrorMsg: string | null = null;
@@ -54,24 +76,32 @@ function RecipeCreate() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Fetch categories from the backend
-        backend
-            .get(config.backendUrl + "/categories")
-            .then((response) => {
+        // Load categories
+        backend.get(config.backendUrl + "/categories")
+            .then(response => {
                 const categoriesFromApi = response.data.map((cat: any) => ({
                     label: cat.name,
                     value: cat.id,
                 }));
-
-                setState((s) => {
+                setState(s => {
                     s.categoriesList = categoriesFromApi;
                     return s.shallowClone();
                 });
-            })
-            .catch((error) => {
-                console.error("Failed to load categories:", error);
             });
-    }, []); // runs once when component mounts
+
+        // Load ingredient list for dropdown
+        backend.get(config.backendUrl + "/ingredients")
+            .then(response => {
+                const ing = response.data.map((i: any) => ({
+                    label: i.name,
+                    value: i.id
+                }));
+                setState(s => {
+                    s.ingredientOptions = ing;
+                    return s.shallowClone();
+                });
+            });
+    }, []);
 
     const update = (updater: () => void) => {
         updater();
@@ -116,7 +146,16 @@ function RecipeCreate() {
                     ? state.imageBase64
                     : null,
             categoryIds: state.categoryIds,
+
+            ingredients: state.ingredients.map((i) => ({
+                ingredientId: i.ingredientId,                      // can be null or number
+                ingredientName: i.ingredientName.trim(),          // string
+                quantity: i.quantity.trim() || null,              // string or null
+                unit: i.unit.trim() || null,                      // string or null
+            })),
         };
+
+        console.log("Recipe payload:", recipe);
 
         // 4) Send to backend
         backend
@@ -130,8 +169,17 @@ function RecipeCreate() {
                 const errors = err?.response?.data?.errors;
 
                 if (errors) {
-                    // map backend ModelState errors (same style as RecipeEdit)
                     updateState((s) => {
+                        // clear previous errors
+                        s.titleErrorMsg = null;
+                        s.descriptionErrorMsg = null;
+                        s.categoryIdsErrorMsg = null;
+
+                        // clear ingredient errors
+                        s.ingredients.forEach((ing) => {
+                            ing.ingredientNameError = null;
+                        });
+
                         if (errors.Title?.[0]) {
                             s.titleErrorMsg = errors.Title[0];
                         }
@@ -141,6 +189,19 @@ function RecipeCreate() {
                         if (errors.CategoryIds?.[0]) {
                             s.categoryIdsErrorMsg = errors.CategoryIds[0];
                         }
+
+                        // handle ingredient name errors: Ingredients[0].IngredientName, etc.
+                        Object.entries(errors).forEach(([key, value]) => {
+                            const messages = value as string[];
+
+                            const match = key.match(/^Ingredients\[(\d+)\]\.IngredientName$/);
+                            if (match) {
+                                const index = Number(match[1]);
+                                if (!Number.isNaN(index) && s.ingredients[index]) {
+                                    s.ingredients[index].ingredientNameError = messages[0];
+                                }
+                            }
+                        });
                     });
                 } else {
                     updateState((s) => {
@@ -304,6 +365,127 @@ function RecipeCreate() {
                             />
                         )}
                     </div>
+
+                    {/* INGREDIENTS */}
+                    <div className="mt-4 w-100">
+                        <h5>Ingredients</h5>
+
+                        {state.ingredients.map((ing, idx) => (
+                            <div key={idx} className="border rounded p-3 mb-3">
+
+                                {/* Ingredient select OR text */}
+                                <label className="form-label">Ingredient</label>
+                                <select
+                                    className="form-select mb-2"
+                                    value={ing.ingredientId ?? ""}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        update(() => {
+                                            if (value === "") {
+                                                ing.ingredientId = null;
+                                                ing.ingredientName = "";
+                                            } else {
+                                                ing.ingredientId = Number(value);
+                                                const text = state.ingredientOptions.find(
+                                                    (o) => o.value === Number(value)
+                                                )?.label ?? "";
+                                                ing.ingredientName = text;
+                                            }
+                                        });
+                                    }}
+                                >
+                                    <option value="">-- Enter manually --</option>
+                                    {state.ingredientOptions.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {/* If user wants to type new ingredient */}
+                                {ing.ingredientId === null && (
+                                    <>
+                                        <InputText
+                                            className={
+                                                "form-control mb-2 " +
+                                                (ing.ingredientNameError ? "is-invalid" : "")
+                                            }
+                                            placeholder="Ingredient name..."
+                                            value={ing.ingredientName}
+                                            onChange={(e) =>
+                                                update(() => {
+                                                    ing.ingredientName = e.target.value;
+                                                    // clear client-side when user starts typing again
+                                                    ing.ingredientNameError = null;
+                                                })
+                                            }
+                                        />
+                                        {ing.ingredientNameError && (
+                                            <div className="invalid-feedback d-block">
+                                                {ing.ingredientNameError}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+
+                                {/* Quantity */}
+                                <label className="form-label">Quantity</label>
+                                <InputText
+                                    className="form-control mb-2"
+                                    placeholder="e.g. 1"
+                                    value={ing.quantity}
+                                    onChange={(e) =>
+                                        update(() => (ing.quantity = e.target.value))
+                                    }
+                                />
+
+                                {/* Unit */}
+                                <label className="form-label">Unit</label>
+                                <InputText
+                                    className="form-control mb-2"
+                                    placeholder="e.g. tbsp, cup, g"
+                                    value={ing.unit}
+                                    onChange={(e) =>
+                                        update(() => (ing.unit = e.target.value))
+                                    }
+                                />
+
+                                {/* Remove ingredient */}
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-danger btn-sm mt-2"
+                                    onClick={() =>
+                                        update(() =>
+                                            state.ingredients.splice(idx, 1)
+                                        )
+                                    }
+                                >
+                                    Remove Ingredient
+                                </button>
+                            </div>
+                        ))}
+
+                        {/* Add ingredient button */}
+                        <button
+                            type="button"
+                            className="btn btn-secondary mt-2"
+                            onClick={() =>
+                                update(() =>
+                                    state.ingredients.push({
+                                        ingredientId: null,
+                                        ingredientName: "",
+                                        quantity: "",
+                                        unit: "",
+                                        ingredientNameError: null, // NEW
+                                    })
+                                )
+                            }
+                        >
+                            + Add Ingredient
+                        </button>
+                    </div>
+
+
 
                     {/* Save & Cancel buttons */}
                     <div className="d-flex justify-content-center align-items-center w-100 mt-4">

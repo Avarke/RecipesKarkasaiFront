@@ -6,6 +6,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import backend from "../../app/backend";
 import config from "../../app/config";
 import { notifySuccess } from "../../app/notify";
+import {InputText} from "primereact/inputtext";
+import {IngredientFormRow} from "./IngredientForm";
 
 interface RecipeVm {
     id: number;
@@ -15,7 +17,16 @@ interface RecipeVm {
     average_Rating: number;
     categories: string[];
     imageBase64?: string | null;
+
+    // ingredients
+    ingredients: {
+        ingredientId: number;
+        ingredientName: string;
+        quantity: string | null;
+        unit: string | null;
+    }[];
 }
+
 
 interface CategoryVm {
     id: number;
@@ -41,6 +52,10 @@ class State {
 
     isSaveErr: boolean = false;
 
+    ingredients: IngredientFormRow[] = [];
+
+    ingredientOptions: { label: string; value: number }[] = [];
+
     // backend validation messages
     descriptionErrorMsg: string | null = null;
     statusErrorMsg: string | null = null;
@@ -51,6 +66,11 @@ class State {
         this.descriptionErrorMsg = null;
         this.statusErrorMsg = null;
         this.categoryIdsErrorMsg = null;
+
+        // clear ingredient-level errors too
+        this.ingredients.forEach((ing) => {
+            ing.ingredientNameError = null;
+        });
     }
 
     shallowClone(): State {
@@ -87,10 +107,15 @@ function RecipeEdit() {
         Promise.all([
             backend.get<RecipeVm>(`${config.backendUrl}/recipes/${id}`),
             backend.get<CategoryVm[]>(`${config.backendUrl}/categories`),
+            backend.get(config.backendUrl + "/ingredients") // load dropdown
         ])
-            .then(([recipeRes, catRes]) => {
+            .then(([recipeRes, catRes, ingRes]) => {
                 const recipeData = recipeRes.data;
                 const cats = catRes.data;
+                const ingOptions = ingRes.data.map((i: any) => ({
+                    label: i.name,
+                    value: i.id
+                }));
 
                 // map recipe category names -> ids
                 const mappedIds = recipeData.categories
@@ -110,12 +135,20 @@ function RecipeEdit() {
                     s.status = recipeData.status;
                     s.categoryIds = mappedIds;
                     s.imageBase64 = recipeData.imageBase64 || "";
-
                     s.categories = cats;
+
+                    s.ingredients = recipeData.ingredients.map((i) => ({
+                        ingredientId: i.ingredientId,
+                        ingredientName: i.ingredientName,
+                        quantity: i.quantity ?? "",
+                        unit: i.unit ?? ""
+                    }));
+
+                    s.ingredientOptions = ingOptions;
                 });
             })
             .catch((err) => {
-                console.error("Failed to load recipe or categories:", err);
+                console.error("Failed to load recipe data:", err);
                 updateState((s) => {
                     s.isLoading = false;
                     s.isLoaded = false;
@@ -127,7 +160,6 @@ function RecipeEdit() {
         update(() => {
             state.resetErrors();
 
-            // build payload for UpdateRecipeVm
             const payload = {
                 description:
                     state.description.trim() === ""
@@ -139,7 +171,16 @@ function RecipeEdit() {
                     state.imageBase64 && state.imageBase64.trim() !== ""
                         ? state.imageBase64
                         : null,
+
+                ingredients: state.ingredients.map((ing) => ({
+                    ingredientId: ing.ingredientId,        // number | null
+                    ingredientName: ing.ingredientName,    // string
+                    quantity: ing.quantity || null,        // null instead of ""
+                    unit: ing.unit || null,                // null instead of ""
+                })),
             };
+
+            console.log("Update payload:", payload);
 
             backend
                 .put(`${config.backendUrl}/recipes/${state.id}`, payload)
@@ -153,6 +194,11 @@ function RecipeEdit() {
 
                     if (errors) {
                         updateState((s) => {
+                            // clear high-level errors
+                            s.descriptionErrorMsg = null;
+                            s.statusErrorMsg = null;
+                            s.categoryIdsErrorMsg = null;
+
                             if (errors.Description?.[0]) {
                                 s.descriptionErrorMsg = errors.Description[0];
                             }
@@ -160,9 +206,28 @@ function RecipeEdit() {
                                 s.statusErrorMsg = errors.Status[0];
                             }
                             if (errors.CategoryIds?.[0]) {
-                                s.categoryIdsErrorMsg =
-                                    errors.CategoryIds[0];
+                                s.categoryIdsErrorMsg = errors.CategoryIds[0];
                             }
+
+                            // clear ingredient errors
+                            s.ingredients.forEach((ing) => {
+                                ing.ingredientNameError = null;
+                            });
+
+                            // map ingredient errors: Ingredients[0].IngredientName
+                            Object.entries(errors).forEach(([key, value]) => {
+                                const messages = value as string[];
+
+                                const match =
+                                    key.match(/^Ingredients\[(\d+)\]\.IngredientName$/);
+                                if (match) {
+                                    const index = Number(match[1]);
+                                    if (!Number.isNaN(index) && s.ingredients[index]) {
+                                        s.ingredients[index].ingredientNameError =
+                                            messages[0];
+                                    }
+                                }
+                            });
                         });
                     } else {
                         updateState((s) => {
@@ -318,6 +383,112 @@ function RecipeEdit() {
                             style={{ width: "150px" }}
                         />
                     )}
+                </div>
+
+                <div className="mt-4 w-100">
+                    <h5>Ingredients</h5>
+
+                    {state.ingredients.map((ing, idx) => (
+                        <div key={idx} className="border rounded p-3 mb-3">
+
+                            <label className="form-label">Ingredient</label>
+                            <select
+                                className={
+                                    "form-select mb-2 " +
+                                    (ing.ingredientNameError ? "is-invalid" : "")
+                                }
+                                value={ing.ingredientId ?? ""}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    update(() => {
+                                        if (value === "") {
+                                            ing.ingredientId = null;
+                                            ing.ingredientName = "";
+                                        } else {
+                                            ing.ingredientId = Number(value);
+                                            ing.ingredientName =
+                                                state.ingredientOptions.find(
+                                                    (o) =>
+                                                        o.value ===
+                                                        Number(value)
+                                                )?.label ?? "";
+                                        }
+                                        // clear error on change
+                                        ing.ingredientNameError = null;
+                                    });
+                                }}
+                            >
+                                <option value="">-- Enter manually --</option>
+                                {state.ingredientOptions.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
+
+                            {ing.ingredientId === null && (
+                                <>
+                                    <InputText
+                                        className={
+                                            "form-control mb-2 " +
+                                            (ing.ingredientNameError
+                                                ? "is-invalid"
+                                                : "")
+                                        }
+                                        placeholder="Ingredient name..."
+                                        value={ing.ingredientName}
+                                        onChange={(e) =>
+                                            update(() => {
+                                                ing.ingredientName =
+                                                    e.target.value;
+                                                ing.ingredientNameError = null;
+                                            })
+                                        }
+                                    />
+                                    {false}
+                                </>
+                            )}
+
+                            <label className="form-label">Quantity</label>
+                            <InputText
+                                className="form-control mb-2"
+                                value={ing.quantity}
+                                onChange={(e) => update(() => ing.quantity = e.target.value)}
+                            />
+
+                            <label className="form-label">Unit</label>
+                            <InputText
+                                className="form-control mb-2"
+                                value={ing.unit}
+                                onChange={(e) => update(() => ing.unit = e.target.value)}
+                            />
+
+                            <button
+                                type="button"
+                                className="btn btn-outline-danger btn-sm mt-2"
+                                onClick={() => update(() => state.ingredients.splice(idx, 1))}
+                            >
+                                Remove Ingredient
+                            </button>
+                        </div>
+                    ))}
+
+                    <button
+                        type="button"
+                        className="btn btn-secondary mt-2"
+                        onClick={() =>
+                            update(() =>
+                                state.ingredients.push({
+                                    ingredientId: null,
+                                    ingredientName: "",
+                                    quantity: "",
+                                    unit: "",
+                                })
+                            )
+                        }
+                    >
+                        + Add Ingredient
+                    </button>
                 </div>
 
                 <button className="btn btn-primary" type="submit">
