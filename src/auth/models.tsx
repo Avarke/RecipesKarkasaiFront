@@ -2,9 +2,9 @@
  * Response to valid login request.
  */
 interface LogInResponse {
-  userId: number;
-  userTitle: string;
-  jwt: string;
+  accessToken: string;
+  userId: string;
+  userName: string;
 };
 
 //

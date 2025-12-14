@@ -1,17 +1,26 @@
 import { useState } from 'react';
 import axios from 'axios';
-
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
+import {jwtDecode} from "jwt-decode";
 
 import config from '../app/config';
 import appState from '../app/appState';
-import backend, { setAuthenticatingBackend } from '../app/backend';
+import backend, {setAccessToken, setAuthenticatingBackend} from '../app/backend';
 import '../navmenu/NavMenu.scss'
+import RegisterDialog from "./Register";
 
 
 import { LogInResponse } from './models';
+import {notifyFailure, notifySuccess} from "../app/notify";
+import {ZIndexUtils} from "primereact/utils";
+import set = ZIndexUtils.set;
+
+type TokenPayload = {
+    role?: string | string[];  // ASP.NET might send one or many
+    [key: string]: any;
+};
 
 
 /**
@@ -21,13 +30,15 @@ class State
 {
 	/** Indicates if log-in dialog is visible. */
 	isDialogVisible : boolean = false;
+    isRegisterVisible : boolean = false;
 
 
 	/** Username, as entered. */
-	username : string = "";
+	UserName : string = "";
 
 	/** Password, as entered. */
-	password : string = "";
+	Password : string = "";
+
 
 
 	/** Indicates if username field validation failed. */
@@ -92,10 +103,10 @@ function LogIn() {
 			state.resetErrors();
 
 			//validate fields
-			if( state.username.trim() === "" )
+			if( state.UserName.trim() === "" )
 				state.isUsernameErr = true;
 
-			if( state.password === "" )
+			if( state.Password === "" )
 				state.isPasswordErr = true;
 
 			//any fields invalid? abort
@@ -108,13 +119,11 @@ function LogIn() {
 
 			//all fields valid, try loggin in
 			//XXX: this is only secure over HTTPS, DO NOT SEND USER CREDENTIALS UNENCRYPTED in production code!
-			backend.get<LogInResponse>(
-				config.backendUrl + "/auth/login",
+			backend.post<LogInResponse>(
+				config.backendUrl + "/login",
 				{
-					params : {
-						username : state.username,
-						password : state.password
-					}
+						userName : state.UserName,
+						password : state.Password
 				}
 			)
 			//login ok
@@ -122,18 +131,35 @@ function LogIn() {
 				let data = resp.data;
 
 				//save user information and JWT for subsequent authenticaton in backend requests
-				appState.userId = data.userId;
-				appState.userTitle = data.userTitle;
-				appState.authJwt = data.jwt;
+                appState.authJwt   = data.accessToken;
+                appState.userId    = data.userId;
+                appState.userTitle = data.userName;
 
-				//log JWT to browser console
-				console.log(data.jwt);
+                setAccessToken(data.accessToken);
+                const token = appState.authJwt;
+
+                const decoded = jwtDecode<any>(token);
+                const rawRole =
+                    decoded.role ??
+                    decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+
+                const roles =
+                    Array.isArray(rawRole) ? rawRole :
+                        typeof rawRole === "string" ? [rawRole] :
+                            [];
+
+                console.log("decoded token:", decoded);
+                console.log("rawRole:", rawRole);
+
+                appState.userRoles = roles;
 
 				//replace backend connector with axios instance sending appropriate 'Authorization' header
 				setAuthenticatingBackend(appState.authJwt);
 
 				//indicate user is logged in
 				appState.isLoggedIn.value = true;
+
+                notifySuccess("Log in successful.");
 			})
 			//login failed or backend error, show error message
 			.catch(err => {
@@ -171,8 +197,8 @@ function LogIn() {
 					className={"form-control " + (state.isUsernameErr ? "is-invalid" : "") }
 					placeholder="Enter your username"
 					autoFocus
-					value={state.username}
-					onChange={(e) => update(() => state.username = e.target.value)}
+					value={state.UserName}
+					onChange={(e) => update(() => state.UserName = e.target.value)}
 					/>
 				{state.isUsernameErr &&
 					<div className="invalid-feedback">Username must be non empty and non whitespace.</div>
@@ -189,8 +215,8 @@ function LogIn() {
 					placeholder="Enter your password"
 					toggleMask
 					feedback={false}
-					value={state.password}
-					onChange={(e) => update(() => state.password = e.target.value)}
+					value={state.Password}
+					onChange={(e) => update(() => state.Password = e.target.value)}
 					/>
 				{state.isPasswordErr &&
 					<div className="invalid-feedback">Password must be non empty.</div>
@@ -208,7 +234,34 @@ function LogIn() {
 					onClick={() => update(() => state.isDialogVisible = false)}
 					>Cancel</button>
 			</div>
+            <div className="mt-2">
+                <span className="text-muted">Don’t have an account? </span>
+                <button
+                    type="button"
+                    className="btn btn-link p-0 align-baseline"
+                    onClick={() =>
+                        update(() => {
+                            state.isDialogVisible = false;
+                            state.isRegisterVisible = true;
+                        })
+                    }
+                >
+                    Register
+                </button>
+            </div>
 		</Dialog>
+
+            <RegisterDialog
+                visible={state.isRegisterVisible}
+                onHide={() => update(() => (state.isRegisterVisible = false))}
+                onRegistered={() =>
+                    update(() => {
+                        // after successful register, bring them back to login (optional)
+                        state.isRegisterVisible = false;
+                        state.isDialogVisible = true;
+                    })
+                }
+            />
 		</>;
 
 	//

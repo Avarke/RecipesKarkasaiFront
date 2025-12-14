@@ -12,14 +12,11 @@ import { notifySuccess } from "../../app/notify";
  * Component state class.
  */
 
-type IngredientFormRow = {
-    ingredientId: number | null;
-    ingredientName: string;
-    quantity: string;
-    unit: string;
-    ingredientNameError?: string | null; // NEW
-};
-
+import {
+    IngredientFormRow,
+    hasDuplicateIngredientNames,
+    applyDuplicateIngredientErrors,
+} from "./IngredientForm";
 
 class State {
     title: string = "";
@@ -27,6 +24,7 @@ class State {
     status: string = "Pending";
     average_Rating: number = 0;
     imageBase64: string = "";
+    requestMessage: string = "";
     categoryIds: number[] = [];
 
     categoriesList: { label: string; value: number }[] = [];
@@ -126,11 +124,20 @@ function RecipeCreate() {
             if (s.categoryIds.length === 0) {
                 s.isCategoryErr = true;
             }
+            applyDuplicateIngredientErrors(s.ingredients);
         });
 
         // 2) If client-side errors exist, abort
-        const hasClientErrors =
+        const hasTitleOrCategoryErrors =
             state.title.trim() === "" || state.categoryIds.length === 0;
+
+        const hasIngredientDuplicates = hasDuplicateIngredientNames(
+            state.ingredients
+        );
+
+        const hasClientErrors =
+            hasTitleOrCategoryErrors || hasIngredientDuplicates;
+
         if (hasClientErrors) return;
 
         // 3) Build payload (nulls where appropriate to match backend DTOs)
@@ -146,7 +153,10 @@ function RecipeCreate() {
                     ? state.imageBase64
                     : null,
             categoryIds: state.categoryIds,
-
+            requestMessage:
+                state.requestMessage.trim() === ""
+                    ? null
+                    : state.requestMessage.trim(),
             ingredients: state.ingredients.map((i) => ({
                 ingredientId: i.ingredientId,                      // can be null or number
                 ingredientName: i.ingredientName.trim(),          // string
@@ -276,6 +286,34 @@ function RecipeCreate() {
                         </div>
                     )}
 
+                    {/* RequestMessage */}
+                    <label
+                        htmlFor="requestMessage"
+                        className="form-label mt-3"
+                    >
+                        Request message:
+                    </label>
+                    <InputTextarea
+                        id="requestMessage"
+                        rows={4}
+                        className={
+                            "form-control " +
+                            (state.descriptionErrorMsg ? "is-invalid" : "")
+                        }
+                        value={state.requestMessage}
+                        onChange={(e) =>
+                            update(
+                                () => (state.requestMessage = e.target.value)
+                            )
+                        }
+                    />
+                    {state.descriptionErrorMsg && (
+                        <div className="invalid-feedback d-block">
+                            {state.descriptionErrorMsg}
+                        </div>
+                    )}
+
+
                     {/* Status dropdown (read-only for now) */}
                     <label htmlFor="status" className="form-label mt-3">
                         Status:
@@ -376,7 +414,10 @@ function RecipeCreate() {
                                 {/* Ingredient select OR text */}
                                 <label className="form-label">Ingredient</label>
                                 <select
-                                    className="form-select mb-2"
+                                    className={
+                                        "form-select mb-2 " +
+                                        (ing.ingredientNameError ? "is-invalid" : "")
+                                    }
                                     value={ing.ingredientId ?? ""}
                                     onChange={(e) => {
                                         const value = e.target.value;
@@ -391,6 +432,8 @@ function RecipeCreate() {
                                                 )?.label ?? "";
                                                 ing.ingredientName = text;
                                             }
+                                            // clear error on change
+                                            ing.ingredientNameError = null;
                                         });
                                     }}
                                 >
@@ -401,6 +444,12 @@ function RecipeCreate() {
                                         </option>
                                     ))}
                                 </select>
+
+                                {ing.ingredientId !== null && ing.ingredientNameError && (
+                                    <div className="invalid-feedback d-block">
+                                        {ing.ingredientNameError}
+                                    </div>
+                                )}
 
                                 {/* If user wants to type new ingredient */}
                                 {ing.ingredientId === null && (

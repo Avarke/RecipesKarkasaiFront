@@ -18,12 +18,14 @@ const STORAGE_KEY = "t120b178.frontend.AppState"
  */
 class AppState extends ObservableClass {
 	/** User ID, if known. */
-	userId : number = -1;
+	userId : string = "";
 
 	/** User title, if known. */
 	userTitle : string = "";
-	
-	/** Indicates if user is considered to be logged in. */
+
+    userRoles: string[] = [];
+
+    /** Indicates if user is considered to be logged in. */
 	isLoggedIn = this.observableProperty<boolean>(false);
 
 	/** Is used to pass messages to app global toast control. */
@@ -40,7 +42,25 @@ class AppState extends ObservableClass {
 	/** Authentication token. Getter. */
 	get authJwt() : string | null {
 		return window.sessionStorage.getItem(`${STORAGE_KEY}#jwt`);
-	}	
+	}
+
+
+    get isAdmin(): boolean {
+        return (this.userRoles.includes("Admin") && this.isLoggedIn.value);
+    }
+
+    get isUserOnly(): boolean {
+        return (this.userRoles.includes("SiteUser") && !this.userRoles.includes("Admin") && this.isLoggedIn.value);
+    }
+
+    clearAuth() {
+        this.userId = "";
+        this.userTitle = "";
+        this.userRoles = [];
+        this.authJwt = null;
+        this.isLoggedIn.value = false;
+    }
+
 }
 
 //export default instance

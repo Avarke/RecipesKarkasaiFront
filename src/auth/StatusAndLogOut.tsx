@@ -5,6 +5,8 @@ import appState from '../app/appState';
 import backend, { setNonAuthenticatingBackend } from '../app/backend';
 
 import '../navmenu/NavMenu.scss'
+import {notifyFailure, notifySuccess} from "../app/notify";
+import {forceLogout} from "./tokenService";
 
 /**
  * Log-out section in nav bar. React component.
@@ -16,29 +18,16 @@ function StatusAndLogOut() {
 	 */
 	let onLogOut = () => {
 		//send log-out request to the backend
-		backend.get(
-			config.backendUrl + "/auth/logout",
-			{
-				params : {					
-				}
-			}
-		)
+		backend.post("/logout")
 		//logout ok
-		.then(resp => {			
-			//forget user information and JWT
-			appState.userId = -1;
-			appState.userTitle = "";
-			appState.authJwt = "";
-
-			//switch back non-authenticating backend connector
-			setNonAuthenticatingBackend();
-
-			//indicate user is logged out
-			appState.isLoggedIn.value = false;
+		.then(resp => {
+            forceLogout();
 		})
 		//login failed or backend error, show error message
 		.catch(err => {
-			//TODO: show some kind of error dialog? assume user is logged out anyway?
+            console.error("Logout failed:", err);
+            // You might still want to clear local state:
+            forceLogout();
 		});
 	}
 

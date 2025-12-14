@@ -1,8 +1,9 @@
 import { Routes, Route } from 'react-router-dom'
 import RecipesList from "../RecipesList";
-import RecipeCreate from "./RecipeCreate";
+import RecipeCreate from "../recipesCrud/RecipeCreate";
 import AdminRecipesList from "./AdminRecipesList";
-import RecipeEdit from "./RecipeEdit";
+import RecipeEdit from "../recipesCrud/RecipeEdit";
+import AdminPendingRecipesList from "./AdminPendingRecipesList";
 
 
 
@@ -12,7 +13,7 @@ import RecipeEdit from "./RecipeEdit";
  * components of concrete operations. React component.
  * @returns Component HTML.
  */
-function RecipeCrud() {
+function AdminRecipeCrud() {
     //render component html
     let html =
         <>
@@ -23,6 +24,9 @@ function RecipeCrud() {
                 <Route path="create" element={<RecipeCreate />} />
                 {/* /admin/recipes/edit/:id */}
                 <Route path="edit/:id" element={<RecipeEdit />} />
+
+                {/* /admin/recipes/pending */}
+                <Route path="pending" element={<AdminPendingRecipesList />} />
             </Routes>
         </>
 
@@ -31,4 +35,4 @@ function RecipeCrud() {
 }
 
 //
-export default RecipeCrud;
+export default AdminRecipeCrud;

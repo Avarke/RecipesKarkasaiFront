@@ -68,11 +68,11 @@ function DevelopmentLogIn() {
 
 			//save user information and JWT for subsequent authenticaton in backend requests
 			appState.userId = data.userId;
-			appState.userTitle = data.userTitle;
-			appState.authJwt = data.jwt;
+			appState.userTitle = data.userName;
+			appState.authJwt = data.accessToken;
 
 			//log JWT to browser console
-			console.log(data.jwt);
+			console.log(data.accessToken);
 
 			//replace backend connector with axios instance sending appropriate 'Authorization' header
 			setAuthenticatingBackend(appState.authJwt);

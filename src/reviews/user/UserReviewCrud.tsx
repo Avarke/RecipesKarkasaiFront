@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
-import AdminReviewsList from "./AdminReviewsList";
-import ReviewCreate from "./ReviewCreate";
-import ReviewEdit from "./ReviewEdit";
+import UserReviewsList from "./UserReviewsList";
+import ReviewCreate from "../reviewCrud/ReviewCreate";
+import ReviewEdit from "../reviewCrud/ReviewEdit";
 
 
 
@@ -12,13 +12,13 @@ import ReviewEdit from "./ReviewEdit";
  * components of concrete operations. React component.
  * @returns Component HTML.
  */
-function RecipeCrud() {
+function UserReviewCrud() {
     //render component html
     let html =
         <>
             <Routes>
                 {/* index route: /admin/recipes */}
-                <Route index element={<AdminReviewsList />} />
+                <Route index element={<UserReviewsList />} />
                 {/* /admin/recipes/new */}
                 <Route path="create" element={<ReviewCreate />} />
                 {/*/!* /admin/recipes/edit/:id *!/*/}
@@ -31,4 +31,4 @@ function RecipeCrud() {
 }
 
 //
-export default RecipeCrud;
+export default UserReviewCrud;

@@ -10,11 +10,15 @@ import appState from "../app/appState";
  * Navigation menu. React component.
  * @returns Component HTML.
  */
+
+
+
+
 function NavMenu() {
 	//render component HTML
 	let html =
         <header>
-            <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+            <nav className="navbar navbar-expand-md navbar-light bg-white shadow-sm">
                 <div className="container">
                     {/* Brand */}
                     <NavLink to="/" className="navbar-brand">
@@ -59,7 +63,7 @@ function NavMenu() {
                             </li>
 
                             <li className="nav-item">
-                                {appState.isLoggedIn.value && (
+                                {appState.isAdmin && (
                                     <NavLink
                                         to="/admin/recipes"
                                         className={({ isActive }) =>
@@ -67,6 +71,19 @@ function NavMenu() {
                                         }
                                     >
                                         Admin Dashboard
+                                    </NavLink>
+                                )}
+                            </li>
+
+                            <li className="nav-item">
+                                {appState.isUserOnly && (
+                                    <NavLink
+                                        to="/user/recipes"
+                                        className={({ isActive }) =>
+                                            "nav-link " + (isActive ? "active" : "")
+                                        }
+                                    >
+                                        User Dashboard
                                     </NavLink>
                                 )}
                             </li>

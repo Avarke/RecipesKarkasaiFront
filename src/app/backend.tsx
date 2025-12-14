@@ -1,4 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
+import config from "./config";
+import { refreshAccessToken, forceLogout } from "../auth/tokenService";
+import appState from "./appState";
 
 /**
  * This module exposes a separate axios instance to be used for connections to backend.
@@ -16,26 +19,91 @@ import axios, { AxiosInstance } from 'axios';
  * state.
  */
 
-let backend = axios.create();
+
+
+
+
+
+let accessToken: string | null = null;
+
+
+
+
+
+const backend = axios.create({
+    baseURL: config.backendUrl,
+    withCredentials: true,
+});
+
+backend.interceptors.request.use((req) => {
+    if (accessToken) {
+        req.headers.Authorization = `Bearer ${accessToken}`;
+    } else {
+        // ensure it's not accidentally kept
+        delete req.headers.Authorization;
+    }
+    return req;
+});
+
+// TEMPORARY
+backend.interceptors.request.use((req) => {
+    if (accessToken) req.headers.Authorization = `Bearer ${accessToken}`;
+    else delete req.headers.Authorization;
+    console.log("REQUEST", req.method, req.url, "Auth:", req.headers?.Authorization);
+    console.log("accessToken var:", accessToken);
+    console.log("appState.authJwt:", appState.authJwt);
+    return req;
+});
+
+/** On 401, try refresh once, then retry the original request. */
+backend.interceptors.response.use(
+    (res) => res,
+    async (error) => {
+        const status = error?.response?.status;
+        const originalRequest = error?.config;
+
+        if (status !== 401 || !originalRequest) {
+            return Promise.reject(error);
+        }
+        // Avoid infinite loops
+        if (originalRequest._retry) {
+            forceLogout();
+            return Promise.reject(error);
+        }
+        originalRequest._retry = true;
+
+        // Try to refresh access token
+        const newToken = await refreshAccessToken();
+
+        if (!newToken) {
+            // Refresh failed -> log user out
+            forceLogout();
+            return Promise.reject(error);
+        }
+
+        setAccessToken(newToken);
+
+        return backend(originalRequest);
+    }
+);
+
+export function setAccessToken(token: string | null) {
+    accessToken = token;
+}
 
 /**
  * Set backend connector to version that automatically authenticates to the server with given JWT.
  * @param jwt JWT to use.
  */
-function setAuthenticatingBackend(jwt : string) {
-    backend =
-        axios.create({
-            headers : {
-                Authorization: `Bearer ${jwt}`
-            }
-        });
+function setAuthenticatingBackend(jwt: string) {
+    backend.defaults.headers.common["Authorization"] = `Bearer ${jwt}`;
 }
 
 /**
  * Set backend connector to non-authenticating version.
  */
 function setNonAuthenticatingBackend() {
-    backend = axios.create();
+    delete backend.defaults.headers.common["Authorization"];
 }
 
 //

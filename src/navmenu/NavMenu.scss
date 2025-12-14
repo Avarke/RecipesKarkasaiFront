@@ -4,30 +4,42 @@
   background-color: #fff;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: none;
-  padding: 0.75rem 2rem;
+  padding: 0.75rem 0;
+  display: flex;
+  align-items: center;
 
   .navbar-content {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    position: relative;
+    justify-content: space-between;
+    gap: 1rem;
   }
+
+
 
   .navbar-brand {
     font-weight: 700;
     color: $brand-color;
-    font-size: 1.25rem;
-    text-transform: uppercase;
+    font-size: 1.8rem;
     letter-spacing: 0.5px;
-    position: absolute;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
     left: 50%;
     transform: translateX(-50%);
+    font-family: "Delius Swash Caps", cursive;
+    font-weight: 400;
+    font-style: normal;
+    padding-left: 0.3125rem;
+    padding-right: 0.3125rem;
+    margin-left: auto;
   }
 
   .navbar-nav {
     .nav-link {
       font-weight: 500;
       color: #222;
+      font-size: 1.2rem;
       &:hover {
         color: $brand-color;
       }
@@ -43,6 +55,7 @@
   .btn {
     border-radius: 0;
     font-weight: 500;
+    font-size: 1.2rem;
     padding: 0.4rem 0.9rem;
     transition: all 0.2s ease;
 
@@ -70,10 +83,31 @@
     &:hover {
       background-color: $brand-color;
       color: #fff;
+      border-color: $brand-color;
+    }
+
+    &:active {
+      background-color: orange !important;
+      border-color: $brand-color !important;
     }
   }
 
+  .user-status{
+    font-size: 1.2rem;
+    margin-left: 0.5rem;
+  }
   .search-input {
     border-radius: 0;
+    font-size: 1.2rem;
+    min-width: 140px;
+    max-width: 320px;
+    width: 100%;
+  }
+  .search-wrapper {
+    flex: 1 1 auto;      // take leftover space, but allow shrink
+    min-width: 0;        // IMPORTANT: allows flex items to actually shrink
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 }

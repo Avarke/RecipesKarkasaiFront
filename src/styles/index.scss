@@ -1,11 +1,29 @@
 //import common stuff, to make sure it is always included in the build
 @use './imports' as *;
 
-//import CSS fixes, if any
+@import url('https://fonts.googleapis.com/css2?family=Delius+Swash+Caps&display=swap');//import CSS fixes, if any
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Deca&display=swap');
 @import "./css-fixes-primefaces";
+
 
 //make sure page content occupies full viewport
 html, body {
   height: auto;
   overflow-y: auto;
+  font-family: "Lexend Deca", sans-serif;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 992px) {
+  .container { max-width: 1400px; }
+}
+
+@media (min-width: 1400px) {
+  .container { max-width: 1600px; }
 }

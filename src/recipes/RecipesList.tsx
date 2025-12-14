@@ -44,7 +44,13 @@ function RecipesList() {
                 },
             })
             .then((response) => {
-                setRecipes(response.data as RecipeVm[]);
+                const all = response.data as RecipeVm[];
+
+                const onlyPublic = all.filter(
+                    (r) => (r.status ?? "").toLowerCase() === "public"
+                );
+
+                setRecipes(onlyPublic);
             })
             .catch((err) => {
                 console.error("Failed to load recipes:", err);

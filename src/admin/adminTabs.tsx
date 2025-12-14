@@ -23,6 +23,8 @@ function AdminTabs() {
                     Categories
                 </NavLink>
             </li>
+
+
             <li className="nav-item">
                 <NavLink
                     to="/admin/reviews"
@@ -31,6 +33,15 @@ function AdminTabs() {
                     }
                 >
                     Reviews
+                </NavLink>
+            </li>
+
+            <li className="nav-item">
+                <NavLink
+                    to="/admin/recipes/pending"
+                    className={({ isActive }) => "nav-link " + (isActive ? "active" : "")}
+                >
+                    Pending
                 </NavLink>
             </li>
         </ul>

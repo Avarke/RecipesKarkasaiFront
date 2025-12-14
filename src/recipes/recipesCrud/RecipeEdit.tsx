@@ -7,7 +7,11 @@ import backend from "../../app/backend";
 import config from "../../app/config";
 import { notifySuccess } from "../../app/notify";
 import {InputText} from "primereact/inputtext";
-import {IngredientFormRow} from "./IngredientForm";
+import {
+    IngredientFormRow,
+    hasDuplicateIngredientNames,
+    applyDuplicateIngredientErrors,
+} from "./IngredientForm";
 
 interface RecipeVm {
     id: number;
@@ -95,7 +99,7 @@ function RecipeEdit() {
         });
     };
 
-    // initialize (similar to EntityEdit / CategoryEdit)
+    // initialize
     if (!state.isInitialized) {
         update(() => {
             state.isInitialized = true;
@@ -141,7 +145,8 @@ function RecipeEdit() {
                         ingredientId: i.ingredientId,
                         ingredientName: i.ingredientName,
                         quantity: i.quantity ?? "",
-                        unit: i.unit ?? ""
+                        unit: i.unit ?? "",
+                        ingredientNameError: null,
                     }));
 
                     s.ingredientOptions = ingOptions;
@@ -165,7 +170,6 @@ function RecipeEdit() {
                     state.description.trim() === ""
                         ? null
                         : state.description.trim(),
-                status: state.status,
                 categoryIds: state.categoryIds,
                 imageBase64:
                     state.imageBase64 && state.imageBase64.trim() !== ""
@@ -179,6 +183,18 @@ function RecipeEdit() {
                     unit: ing.unit || null,                // null instead of ""
                 })),
             };
+
+            updateState((s) => {
+                applyDuplicateIngredientErrors(s.ingredients);
+            });
+
+            const hasIngredientDuplicates = hasDuplicateIngredientNames(
+                state.ingredients
+            );
+            if (hasIngredientDuplicates) {
+                // don't send to backend
+                return;
+            }
 
             console.log("Update payload:", payload);
 
@@ -301,25 +317,10 @@ function RecipeEdit() {
                 {/* Status */}
                 <div className="mb-3">
                     <label className="form-label">Status</label>
-                    <select
-                        className={
-                            "form-select " +
-                            (state.statusErrorMsg ? "is-invalid" : "")
-                        }
-                        value={state.status}
-                        onChange={(e) =>
-                            update(() => (state.status = e.target.value))
-                        }
-                    >
-                        <option value="Pending">Pending</option>
-                        <option value="Public">Public</option>
-                        <option value="Private">Private</option>
-                    </select>
-                    {state.statusErrorMsg && (
-                        <div className="invalid-feedback">
-                            {state.statusErrorMsg}
-                        </div>
-                    )}
+                    <input className="form-control" value={state.status} disabled />
+                    <div className="form-text">
+                        Any edit will send the recipe for review (status resets to Pending).
+                    </div>
                 </div>
 
                 {/* Categories */}
@@ -426,26 +427,33 @@ function RecipeEdit() {
                                 ))}
                             </select>
 
+                            {ing.ingredientId !== null && ing.ingredientNameError && (
+                                <div className="invalid-feedback d-block">
+                                    {ing.ingredientNameError}
+                                </div>
+                            )}
+
                             {ing.ingredientId === null && (
                                 <>
                                     <InputText
                                         className={
                                             "form-control mb-2 " +
-                                            (ing.ingredientNameError
-                                                ? "is-invalid"
-                                                : "")
+                                            (ing.ingredientNameError ? "is-invalid" : "")
                                         }
                                         placeholder="Ingredient name..."
                                         value={ing.ingredientName}
                                         onChange={(e) =>
                                             update(() => {
-                                                ing.ingredientName =
-                                                    e.target.value;
+                                                ing.ingredientName = e.target.value;
                                                 ing.ingredientNameError = null;
                                             })
                                         }
                                     />
-                                    {false}
+                                    {ing.ingredientNameError && (
+                                        <div className="invalid-feedback d-block">
+                                            {ing.ingredientNameError}
+                                        </div>
+                                    )}
                                 </>
                             )}
 
@@ -483,6 +491,7 @@ function RecipeEdit() {
                                     ingredientName: "",
                                     quantity: "",
                                     unit: "",
+                                    ingredientNameError: null,
                                 })
                             )
                         }
