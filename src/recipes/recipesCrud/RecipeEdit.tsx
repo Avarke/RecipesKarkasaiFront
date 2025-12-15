@@ -1,96 +1,85 @@
 // src/recipes/RecipeEdit.tsx
+// Refactored for the "new backend" where:
+// - Recipe has NO ingredients
+// - Recipe has ONE category (CategoryId)
+// - Endpoints are under /api
+// - PUT expects at least: { title?, description?, categoryId? } (we'll send title+description+categoryId)
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 import backend from "../../app/backend";
-import config from "../../app/config";
 import { notifySuccess } from "../../app/notify";
-import {InputText} from "primereact/inputtext";
-import {
-    IngredientFormRow,
-    hasDuplicateIngredientNames,
-    applyDuplicateIngredientErrors,
-} from "./IngredientForm";
+
+import { InputText } from "primereact/inputtext";
+import { InputTextarea } from "primereact/inputtextarea";
+import { Dropdown } from "primereact/dropdown";
+import appState from "../../app/appState";
+import config from "../../app/config";
 
 interface RecipeVm {
     id: number;
     title: string;
-    description: string;
-    status: string;
-    average_Rating: number;
-    categories: string[];
-    imageBase64?: string | null;
+    description: string | null;
 
-    // ingredients
-    ingredients: {
-        ingredientId: number;
-        ingredientName: string;
-        quantity: string | null;
-        unit: string | null;
-    }[];
+    // new backend model
+    categoryId: number;
+    image_url?: string | null;
+
+    // optionally the API might return a category object instead:
+    // category?: { id: number; name: string };
 }
-
 
 interface CategoryVm {
     id: number;
     name: string;
 }
 
-/**
- * Component state.
- */
 class State {
-    isInitialized: boolean = false;
-    isLoading: boolean = false;
-    isLoaded: boolean = false;
+    isInitialized = false;
+    isLoading = false;
+    isLoaded = false;
 
     id: number = -1;
     title: string = "";
     description: string = "";
-    status: string = "Pending";
-    categoryIds: number[] = [];
-    imageBase64: string = "";
+    categoryId: number | null = null;
 
-    categories: CategoryVm[] = [];
+    categories: { label: string; value: number }[] = [];
 
-    isSaveErr: boolean = false;
-
-    ingredients: IngredientFormRow[] = [];
-
-    ingredientOptions: { label: string; value: number }[] = [];
+    isSaveErr = false;
 
     // backend validation messages
+    titleErrorMsg: string | null = null;
     descriptionErrorMsg: string | null = null;
-    statusErrorMsg: string | null = null;
-    categoryIdsErrorMsg: string | null = null;
+    categoryErrorMsg: string | null = null;
+
+    image_url: string | null = null;        // from API
+    imageFile: File | null = null;          // selected file
+    imagePreviewUrl: string | null = null;  // local preview
+    imageErrorMsg: string | null = null;
+    isImageUploading: boolean = false;
+    isSaving: boolean = false;
 
     resetErrors() {
         this.isSaveErr = false;
+        this.titleErrorMsg = null;
         this.descriptionErrorMsg = null;
-        this.statusErrorMsg = null;
-        this.categoryIdsErrorMsg = null;
-
-        // clear ingredient-level errors too
-        this.ingredients.forEach((ing) => {
-            ing.ingredientNameError = null;
-        });
+        this.categoryErrorMsg = null;
+        this.imageErrorMsg = null;
     }
 
     shallowClone(): State {
         return Object.assign(new State(), this);
     }
+
+
 }
 
 function RecipeEdit() {
     const [state, setState] = useState(new State());
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-
-    const update = (updater: () => void) => {
-        updater();
-        setState(state.shallowClone());
-    };
 
     const updateState = (updater: (s: State) => void) => {
         setState((s) => {
@@ -99,35 +88,24 @@ function RecipeEdit() {
         });
     };
 
-    // initialize
-    if (!state.isInitialized) {
-        update(() => {
-            state.isInitialized = true;
-            state.isLoading = true;
-            state.isLoaded = false;
+    // Initial load (useEffect instead of "if !initialized" to avoid double fetch in StrictMode)
+    useEffect(() => {
+        if (!id) return;
+
+        updateState((s) => {
+            s.isInitialized = true;
+            s.isLoading = true;
+            s.isLoaded = false;
+            s.resetErrors();
         });
 
-        // load recipe + categories
         Promise.all([
-            backend.get<RecipeVm>(`${config.backendUrl}/recipes/${id}`),
-            backend.get<CategoryVm[]>(`${config.backendUrl}/categories`),
-            backend.get(config.backendUrl + "/ingredients") // load dropdown
+            backend.get<RecipeVm>(`/recipes/${id}`),
+            backend.get<CategoryVm[]>(`/categories`),
         ])
-            .then(([recipeRes, catRes, ingRes]) => {
+            .then(([recipeRes, catRes]) => {
                 const recipeData = recipeRes.data;
                 const cats = catRes.data;
-                const ingOptions = ingRes.data.map((i: any) => ({
-                    label: i.name,
-                    value: i.id
-                }));
-
-                // map recipe category names -> ids
-                const mappedIds = recipeData.categories
-                    .map((name) => {
-                        const cat = cats.find((c) => c.name === name);
-                        return cat?.id ?? 0;
-                    })
-                    .filter((cid) => cid !== 0);
 
                 updateState((s) => {
                     s.isLoading = false;
@@ -135,21 +113,13 @@ function RecipeEdit() {
 
                     s.id = recipeData.id;
                     s.title = recipeData.title;
-                    s.description = recipeData.description || "";
-                    s.status = recipeData.status;
-                    s.categoryIds = mappedIds;
-                    s.imageBase64 = recipeData.imageBase64 || "";
-                    s.categories = cats;
+                    s.description = recipeData.description ?? "";
+                    s.categoryId = recipeData.categoryId ?? null;
 
-                    s.ingredients = recipeData.ingredients.map((i) => ({
-                        ingredientId: i.ingredientId,
-                        ingredientName: i.ingredientName,
-                        quantity: i.quantity ?? "",
-                        unit: i.unit ?? "",
-                        ingredientNameError: null,
-                    }));
+                    s.image_url = recipeData.image_url ?? null;
+                    s.imageFile = null;
 
-                    s.ingredientOptions = ingOptions;
+                    s.categories = cats.map((c) => ({ label: c.name, value: c.id }));
                 });
             })
             .catch((err) => {
@@ -159,106 +129,110 @@ function RecipeEdit() {
                     s.isLoaded = false;
                 });
             });
-    }
+    }, [id]);
 
-    const onSave = () => {
-        update(() => {
-            state.resetErrors();
+    const onSave = async () => {
+        // prevent double submit
+        if (state.isSaving || state.isImageUploading) return;
 
-            const payload = {
-                description:
-                    state.description.trim() === ""
-                        ? null
-                        : state.description.trim(),
-                categoryIds: state.categoryIds,
-                imageBase64:
-                    state.imageBase64 && state.imageBase64.trim() !== ""
-                        ? state.imageBase64
-                        : null,
+        // reset errors + start saving immediately (this is what makes disable work)
+        updateState((s) => {
+            s.resetErrors();
+            s.isSaving = true;
+        });
 
-                ingredients: state.ingredients.map((ing) => ({
-                    ingredientId: ing.ingredientId,        // number | null
-                    ingredientName: ing.ingredientName,    // string
-                    quantity: ing.quantity || null,        // null instead of ""
-                    unit: ing.unit || null,                // null instead of ""
-                })),
-            };
+        const titleTrim = state.title.trim();
+        const descTrim = state.description.trim();
 
+        // client validation
+        if (titleTrim === "" || state.categoryId === null) {
             updateState((s) => {
-                applyDuplicateIngredientErrors(s.ingredients);
+                if (titleTrim === "") s.titleErrorMsg = "Title cannot be empty.";
+                if (s.categoryId === null) s.categoryErrorMsg = "Please select a category.";
+                s.isSaving = false; // stop saving because we won't do requests
             });
+            return;
+        }
 
-            const hasIngredientDuplicates = hasDuplicateIngredientNames(
-                state.ingredients
-            );
-            if (hasIngredientDuplicates) {
-                // don't send to backend
+        const payload = {
+            title: titleTrim,
+            description: descTrim === "" ? null : descTrim,
+            categoryId: state.categoryId,
+        };
+
+        try {
+            // 1) update recipe fields
+            await backend.put(`/recipes/${state.id}`, payload);
+
+            // 2) upload image if selected
+            if (state.imageFile) {
+                updateState((s) => {
+                    s.isImageUploading = true;
+                    s.imageErrorMsg = null;
+                });
+
+                const fd = new FormData();
+                fd.append("file", state.imageFile);
+
+                const res = await backend.post(`/recipes/${state.id}/image`, fd, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                });
+
+                const newImageUrl = res?.data?.image_url as string | undefined;
+
+                updateState((s) => {
+                    s.isImageUploading = false;
+
+                    // refresh image url if backend returned it
+                    if (newImageUrl) s.image_url = newImageUrl;
+
+                    // clear selection + preview
+                    if (s.imagePreviewUrl) URL.revokeObjectURL(s.imagePreviewUrl);
+                    s.imagePreviewUrl = null;
+                    s.imageFile = null;
+                });
+            }
+
+            notifySuccess("Recipe updated.");
+            navigate(appState.isAdmin ? "/admin/recipes" : "/user/recipes", { state: "refresh" });
+        } catch (err: any) {
+            console.error("Update failed:", err);
+
+            const status = err?.response?.status;
+            const errors = err?.response?.data?.errors;
+
+            // common: image too large
+            if (status === 413) {
+                updateState((s) => {
+                    s.imageErrorMsg = "Image is too large.";
+                });
                 return;
             }
 
-            console.log("Update payload:", payload);
-
-            backend
-                .put(`${config.backendUrl}/recipes/${state.id}`, payload)
-                .then(() => {
-                    notifySuccess("Recipe updated.");
-                    navigate("/admin/recipes", { state: "refresh" });
-                })
-                .catch((err: any) => {
-                    console.error("Update failed:", err);
-                    const errors = err?.response?.data?.errors;
-
-                    if (errors) {
-                        updateState((s) => {
-                            // clear high-level errors
-                            s.descriptionErrorMsg = null;
-                            s.statusErrorMsg = null;
-                            s.categoryIdsErrorMsg = null;
-
-                            if (errors.Description?.[0]) {
-                                s.descriptionErrorMsg = errors.Description[0];
-                            }
-                            if (errors.Status?.[0]) {
-                                s.statusErrorMsg = errors.Status[0];
-                            }
-                            if (errors.CategoryIds?.[0]) {
-                                s.categoryIdsErrorMsg = errors.CategoryIds[0];
-                            }
-
-                            // clear ingredient errors
-                            s.ingredients.forEach((ing) => {
-                                ing.ingredientNameError = null;
-                            });
-
-                            // map ingredient errors: Ingredients[0].IngredientName
-                            Object.entries(errors).forEach(([key, value]) => {
-                                const messages = value as string[];
-
-                                const match =
-                                    key.match(/^Ingredients\[(\d+)\]\.IngredientName$/);
-                                if (match) {
-                                    const index = Number(match[1]);
-                                    if (!Number.isNaN(index) && s.ingredients[index]) {
-                                        s.ingredients[index].ingredientNameError =
-                                            messages[0];
-                                    }
-                                }
-                            });
-                        });
-                    } else {
-                        updateState((s) => {
-                            s.isSaveErr = true;
-                        });
-                    }
+            if (errors) {
+                updateState((s) => {
+                    if (errors.Title?.[0]) s.titleErrorMsg = errors.Title[0];
+                    if (errors.Description?.[0]) s.descriptionErrorMsg = errors.Description[0];
+                    if (errors.CategoryId?.[0]) s.categoryErrorMsg = errors.CategoryId[0];
                 });
-        });
+                return;
+            }
+
+            updateState((s) => {
+                s.isSaveErr = true;
+            });
+        } finally {
+            // always release locks
+            updateState((s) => {
+                s.isSaving = false;
+                s.isImageUploading = false; // safe even if it wasn't uploading
+            });
+        }
     };
 
-    // render
+    // render states
     if (state.isLoading) {
-        return (
-            <p className="text-center mt-5">Loading recipe...</p>
-        );
+        return <p className="text-center mt-5">Loading recipe...</p>;
     }
 
     if (state.isInitialized && !state.isLoading && !state.isLoaded) {
@@ -269,9 +243,7 @@ function RecipeEdit() {
         );
     }
 
-    if (!state.isLoaded) {
-        return null;
-    }
+    if (!state.isLoaded) return null;
 
     return (
         <div className="container py-5" style={{ maxWidth: "700px" }}>
@@ -279,8 +251,7 @@ function RecipeEdit() {
 
             {state.isSaveErr && (
                 <div className="alert alert-warning mt-3">
-                    Saving failed due to backend failure. Please, wait a
-                    little and retry.
+                    Saving failed due to backend failure. Please, wait a little and retry.
                 </div>
             )}
 
@@ -291,222 +262,116 @@ function RecipeEdit() {
                     onSave();
                 }}
             >
+                {/* Title */}
+                <div className="mb-3">
+                    <label className="form-label">Title</label>
+                    <InputText
+                        className={"form-control " + (state.titleErrorMsg ? "is-invalid" : "")}
+                        value={state.title}
+                        onChange={(e) => updateState((s) => (s.title = e.target.value))}
+                    />
+                    {state.titleErrorMsg && (
+                        <div className="invalid-feedback d-block">{state.titleErrorMsg}</div>
+                    )}
+                </div>
+
                 {/* Description */}
                 <div className="mb-3">
                     <label className="form-label">Description</label>
-                    <textarea
-                        className={
-                            "form-control " +
-                            (state.descriptionErrorMsg ? "is-invalid" : "")
-                        }
+                    <InputTextarea
                         rows={4}
-                        value={state.description}
-                        onChange={(e) =>
-                            update(
-                                () => (state.description = e.target.value)
-                            )
+                        className={
+                            "form-control " + (state.descriptionErrorMsg ? "is-invalid" : "")
                         }
+                        value={state.description}
+                        onChange={(e) => updateState((s) => (s.description = e.target.value))}
                     />
                     {state.descriptionErrorMsg && (
-                        <div className="invalid-feedback">
-                            {state.descriptionErrorMsg}
-                        </div>
+                        <div className="invalid-feedback d-block">{state.descriptionErrorMsg}</div>
                     )}
                 </div>
 
-                {/* Status */}
+                {/* Category (single select) */}
                 <div className="mb-3">
-                    <label className="form-label">Status</label>
-                    <input className="form-control" value={state.status} disabled />
-                    <div className="form-text">
-                        Any edit will send the recipe for review (status resets to Pending).
-                    </div>
-                </div>
-
-                {/* Categories */}
-                <div className="mb-3">
-                    <label className="form-label">Categories</label>
-                    <select
-                        multiple
-                        className={
-                            "form-select " +
-                            (state.categoryIdsErrorMsg ? "is-invalid" : "")
-                        }
-                        value={state.categoryIds.map(String)}
-                        onChange={(e) => {
-                            const selected = Array.from(
-                                e.target.selectedOptions
-                            ).map((opt) => Number(opt.value));
-                            update(() => (state.categoryIds = selected));
-                        }}
-                    >
-                        {state.categories.map((c) => (
-                            <option key={c.id} value={c.id}>
-                                {c.name}
-                            </option>
-                        ))}
-                    </select>
-                    {state.categoryIdsErrorMsg && (
-                        <div className="invalid-feedback">
-                            {state.categoryIdsErrorMsg}
-                        </div>
+                    <label className="form-label">Category</label>
+                    <Dropdown
+                        value={state.categoryId}
+                        options={state.categories}
+                        onChange={(e) => updateState((s) => (s.categoryId = e.value as number))}
+                        optionLabel="label"
+                        placeholder="Select a category"
+                        filter
+                        className={"w-100 " + (state.categoryErrorMsg ? "is-invalid" : "")}
+                    />
+                    {state.categoryErrorMsg && (
+                        <div className="invalid-feedback d-block">{state.categoryErrorMsg}</div>
                     )}
                 </div>
 
-                {/* Image */}
                 <div className="mb-3">
                     <label className="form-label">Image</label>
+
+                    {(state.imagePreviewUrl || state.image_url) && (
+                        <div className="mb-2">
+                            <img
+                                alt="recipe"
+                                style={{ width: "100%", maxHeight: 240, objectFit: "cover", borderRadius: 8 }}
+                                src={
+                                    state.imagePreviewUrl ??
+                                    (state.image_url!.startsWith("http")
+                                        ? state.image_url!
+                                        : `${config.backendUrl}${state.image_url}`)
+                                }
+                            />
+                        </div>
+                    )}
+
                     <input
                         type="file"
-                        className="form-control"
                         accept="image/*"
+                        className={"form-control " + (state.imageErrorMsg ? "is-invalid" : "")}
                         onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
+                            const f = e.target.files?.[0] ?? null;
 
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                                update(
-                                    () =>
-                                        (state.imageBase64 =
-                                            reader.result as string)
-                                );
-                            };
-                            reader.readAsDataURL(file);
+                            updateState((s) => {
+                                s.imageErrorMsg = null;
+
+                                // clean old preview if any
+                                if (s.imagePreviewUrl) URL.revokeObjectURL(s.imagePreviewUrl);
+
+                                s.imageFile = f;
+                                s.imagePreviewUrl = f ? URL.createObjectURL(f) : null;
+                            });
                         }}
                     />
 
-                    {state.imageBase64 && (
-                        <img
-                            src={state.imageBase64}
-                            alt="preview"
-                            className="mt-3 rounded"
-                            style={{ width: "150px" }}
-                        />
+                    {state.imageErrorMsg && (
+                        <div className="invalid-feedback d-block">{state.imageErrorMsg}</div>
+                    )}
+
+                    {state.isImageUploading && (
+                        <div className="text-muted mt-2">Uploading image...</div>
                     )}
                 </div>
 
-                <div className="mt-4 w-100">
-                    <h5>Ingredients</h5>
 
-                    {state.ingredients.map((ing, idx) => (
-                        <div key={idx} className="border rounded p-3 mb-3">
-
-                            <label className="form-label">Ingredient</label>
-                            <select
-                                className={
-                                    "form-select mb-2 " +
-                                    (ing.ingredientNameError ? "is-invalid" : "")
-                                }
-                                value={ing.ingredientId ?? ""}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-                                    update(() => {
-                                        if (value === "") {
-                                            ing.ingredientId = null;
-                                            ing.ingredientName = "";
-                                        } else {
-                                            ing.ingredientId = Number(value);
-                                            ing.ingredientName =
-                                                state.ingredientOptions.find(
-                                                    (o) =>
-                                                        o.value ===
-                                                        Number(value)
-                                                )?.label ?? "";
-                                        }
-                                        // clear error on change
-                                        ing.ingredientNameError = null;
-                                    });
-                                }}
-                            >
-                                <option value="">-- Enter manually --</option>
-                                {state.ingredientOptions.map((opt) => (
-                                    <option key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                    </option>
-                                ))}
-                            </select>
-
-                            {ing.ingredientId !== null && ing.ingredientNameError && (
-                                <div className="invalid-feedback d-block">
-                                    {ing.ingredientNameError}
-                                </div>
-                            )}
-
-                            {ing.ingredientId === null && (
-                                <>
-                                    <InputText
-                                        className={
-                                            "form-control mb-2 " +
-                                            (ing.ingredientNameError ? "is-invalid" : "")
-                                        }
-                                        placeholder="Ingredient name..."
-                                        value={ing.ingredientName}
-                                        onChange={(e) =>
-                                            update(() => {
-                                                ing.ingredientName = e.target.value;
-                                                ing.ingredientNameError = null;
-                                            })
-                                        }
-                                    />
-                                    {ing.ingredientNameError && (
-                                        <div className="invalid-feedback d-block">
-                                            {ing.ingredientNameError}
-                                        </div>
-                                    )}
-                                </>
-                            )}
-
-                            <label className="form-label">Quantity</label>
-                            <InputText
-                                className="form-control mb-2"
-                                value={ing.quantity}
-                                onChange={(e) => update(() => ing.quantity = e.target.value)}
-                            />
-
-                            <label className="form-label">Unit</label>
-                            <InputText
-                                className="form-control mb-2"
-                                value={ing.unit}
-                                onChange={(e) => update(() => ing.unit = e.target.value)}
-                            />
-
-                            <button
-                                type="button"
-                                className="btn btn-outline-danger btn-sm mt-2"
-                                onClick={() => update(() => state.ingredients.splice(idx, 1))}
-                            >
-                                Remove Ingredient
-                            </button>
-                        </div>
-                    ))}
-
-                    <button
-                        type="button"
-                        className="btn btn-secondary mt-2"
-                        onClick={() =>
-                            update(() =>
-                                state.ingredients.push({
-                                    ingredientId: null,
-                                    ingredientName: "",
-                                    quantity: "",
-                                    unit: "",
-                                    ingredientNameError: null,
-                                })
-                            )
-                        }
-                    >
-                        + Add Ingredient
-                    </button>
-                </div>
-
-                <button className="btn btn-primary" type="submit">
-                    Save Changes
+                <button
+                    className="btn btn-primary"
+                    type="submit"
+                    disabled={state.isSaving || state.isImageUploading}
+                >
+                    {(state.isSaving || state.isImageUploading) ? "Saving..." : "Save Changes"}
                 </button>
                 <button
                     type="button"
                     className="btn btn-secondary ms-2"
-                    onClick={() => navigate("/admin/recipes")}
+                    onClick={() => {
+                        if (appState.isAdmin) {
+                            navigate("/admin/recipes");
+                        } else {
+                            navigate("/user/recipes");
+                        }
+                    }}
                 >
                     Cancel
                 </button>

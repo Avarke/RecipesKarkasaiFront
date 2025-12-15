@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { RecipeListVm } from "../models/RecipeListVm";
+import {PublishStatusText} from "../models/PublishStatus";
 
 type Props = {
     recipes: RecipeListVm[];
@@ -18,7 +19,7 @@ export default function RecipeTable({ recipes, onDelete, editPath }: Props) {
                 <th>Title</th>
                 <th style={{ width: "120px" }}>Status</th>
                 <th style={{ width: "140px" }}>Rating</th>
-                <th>Categories</th>
+                <th>Category</th>
                 <th style={{ width: "150px" }} className="text-end">Actions</th>
             </tr>
             </thead>
@@ -27,9 +28,9 @@ export default function RecipeTable({ recipes, onDelete, editPath }: Props) {
                 <tr key={recipe.id}>
                     <td>{recipe.id}</td>
                     <td>{recipe.title}</td>
-                    <td>{recipe.status}</td>
-                    <td>{recipe.average_Rating.toFixed(1)}</td>
-                    <td>{recipe.categories?.length ? recipe.categories.join(", ") : "Uncategorized"}</td>
+                    <td>{PublishStatusText[recipe.publish_status]}</td>
+                    <td>{recipe.average_rating.toFixed(1)}</td>
+                    <td>{recipe.categoryName || "Uncategorized"}</td>
                     <td className="text-end">
                         <Link to={editPath(recipe.id)} className="btn btn-sm btn-primary me-2">
                             Edit

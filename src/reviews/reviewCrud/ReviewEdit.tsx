@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import backend from "../../app/backend";
 import config from "../../app/config";
 import { notifySuccess } from "../../app/notify";
+import appState from "../../app/appState";
 
 interface ReviewVm {
     id: number;
@@ -32,6 +33,9 @@ class State {
     // backend validation messages
     ratingErrorMsg: string | null = null;
     commentErrorMsg: string | null = null;
+
+
+
 
     resetErrors() {
         this.isSaveErr = false;
@@ -237,7 +241,13 @@ function AdminReviewEdit() {
                 <button
                     type="button"
                     className="btn btn-secondary ms-2"
-                    onClick={() => navigate("/admin/reviews")}
+                    onClick={() => {
+                        if (appState.isAdmin) {
+                            navigate("/admin/reviews");
+                        } else {
+                            navigate("/user/reviews");
+                        }
+                    }}
                 >
                     Cancel
                 </button>

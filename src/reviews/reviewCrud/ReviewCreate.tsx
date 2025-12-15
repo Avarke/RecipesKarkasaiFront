@@ -5,12 +5,13 @@ import { Dropdown } from "primereact/dropdown";
 
 import backend from "../../app/backend";
 import config from "../../app/config";
-import { notifySuccess } from "../../app/notify";
+import { notifySuccess, notifyFailure } from "../../app/notify";
+import appState from "../../app/appState";
 
 interface RecipeOption {
     label: string;
     value: number;
-    average_Rating: number;
+    average_rating: number;
 }
 
 /**
@@ -75,16 +76,16 @@ function AdminReviewCreate() {
                 const all = res.data as {
                     id: number;
                     title: string;
-                    average_Rating: number;
+                    average_rating: number;
                 }[];
 
                 const top100 = all
-                    .sort((a, b) => b.average_Rating - a.average_Rating)
+                    .sort((a, b) => b.average_rating - a.average_rating)
                     .slice(0, 100)
                     .map((r) => ({
-                        label: `${r.title} (${r.average_Rating.toFixed(1)}/5)`,
+                        label: `${r.title} (${r.average_rating.toFixed(1)}/5)`,
                         value: r.id,
-                        average_Rating: r.average_Rating,
+                        average_rating: r.average_rating,
                     }));
 
                 setState((s) => {
@@ -133,29 +134,75 @@ function AdminReviewCreate() {
             .post(config.backendUrl + "/reviews", payload)
             .then(() => {
                 notifySuccess("Review created successfully!");
-                navigate("/admin/reviews", { state: "refresh" });
+                navigate("/recipes", { state: "refresh" });
             })
             .catch((err: any) => {
                 console.error("Create review failed:", err);
-                const errors = err?.response?.data?.errors;
+                const status = err?.response?.status;
+                const data = err?.response?.data;
 
+                if (status === 409) {
+                    const msg = data?.error ?? data?.Error ?? "Request conflicted.";
+                    const code = (data?.code ?? data?.Code) as string | undefined;
+                    const existingId = (data?.existingReviewId ?? data?.ExistingReviewId) as number | undefined;
+
+                    if (code === "OWN_RECIPE") {
+                        // only site users should see this (admins could be allowed if you want)
+                        if (appState.isUserOnly) {
+                            updateState((s) => {
+                                s.isSaveErr = false;
+                                s.isRecipeErr = true;
+                                s.recipeIdErrorMsg = msg;
+                            });
+                            notifyFailure(msg);
+                            return;
+                        }
+                        // if not user-only, just show generic conflict
+                    }
+
+                    if (code === "DUPLICATE_REVIEW") {
+                        const friendly =
+                            existingId
+                                ? `${msg} You can edit your existing review instead.`
+                                : msg;
+
+                        updateState((s) => {
+                            s.isSaveErr = false;
+                            s.isRecipeErr = true;
+                            s.recipeIdErrorMsg = friendly;
+                        });
+
+                        notifyFailure(friendly);
+
+                        // optional: auto-navigate to edit existing review
+                        // if (existingId) navigate(`/user/reviews/edit/${existingId}`);
+                        return;
+                    }
+
+                    // unknown conflict
+                    updateState((s) => {
+                        s.isSaveErr = false;
+                        s.isRecipeErr = true;
+                        s.recipeIdErrorMsg = msg;
+                    });
+                    notifyFailure(msg);
+                    return;
+                }
+
+                const errors = data?.errors;
                 if (errors) {
                     updateState((s) => {
-                        if (errors.Rating?.[0]) {
-                            s.ratingErrorMsg = errors.Rating[0];
-                        }
-                        if (errors.Comment?.[0]) {
-                            s.commentErrorMsg = errors.Comment[0];
-                        }
-                        if (errors.RecipeId?.[0]) {
-                            s.recipeIdErrorMsg = errors.RecipeId[0];
-                        }
+                        if (errors.Rating?.[0]) s.ratingErrorMsg = errors.Rating[0];
+                        if (errors.Comment?.[0]) s.commentErrorMsg = errors.Comment[0];
+                        if (errors.RecipeId?.[0]) s.recipeIdErrorMsg = errors.RecipeId[0];
                     });
-                } else {
-                    updateState((s) => {
-                        s.isSaveErr = true;
-                    });
+                    return;
                 }
+
+                // fallback
+                updateState((s) => {
+                    s.isSaveErr = true;
+                });
             });
     };
 
@@ -279,9 +326,13 @@ function AdminReviewCreate() {
                         <button
                             type="button"
                             className="btn btn-outline-secondary mx-2"
-                            onClick={() =>
-                                navigate("/admin/reviews")
-                            }
+                            onClick={() => {
+                                if (appState.isAdmin) {
+                                    navigate("/admin/reviews");
+                                } else {
+                                    navigate("/user/reviews");
+                                }
+                            }}
                         >
                             Cancel
                         </button>

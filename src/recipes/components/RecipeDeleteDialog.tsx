@@ -27,11 +27,11 @@ export default function RecipeDeleteDialog({ visible, recipe, onHide, onConfirm 
             <div>{recipe?.title}</div>
 
             <label className="form-label mt-2">Status:</label>
-            <div>{recipe?.status}</div>
+            <div>{recipe?.publish_status}</div>
 
             <label className="form-label mt-2">Categories:</label>
             <div>
-                {recipe?.categories?.length ? recipe.categories.join(", ") : "Uncategorized"}
+                {recipe?.categoryName || "Uncategorized"}
             </div>
 
             <div className="d-flex justify-content-end mt-3">

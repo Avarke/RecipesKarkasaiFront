@@ -40,7 +40,7 @@ function AdminRecipesList() {
                         className="btn btn-success btn-sm"
                         onClick={() => navigate("./create")}
                     >
-                        + New Recipes
+                        + New Recipe
                     </button>
                 </div>
             </div>

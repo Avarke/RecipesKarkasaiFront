@@ -3,16 +3,17 @@ import { useParams, Link } from "react-router-dom";
 import backend from "../app/backend";
 import config from "../app/config";
 import "./RecipeDetails.scss";
+import {PublishStatus} from "./models/PublishStatus";
 
 interface RecipeVm {
     id: number;
     title: string;
-    description: string;
-    status: string;
-    average_Rating: number;
-    categories: string[];
-    imageBase64?: string | null;
-    userId?: number;
+    description: string | null;
+    publish_status: PublishStatus;
+    average_rating: number;
+    categoryId: number;
+    categoryName: string;
+    image_url?: string | null;
 }
 
 interface ReviewVm {
@@ -21,8 +22,10 @@ interface ReviewVm {
     comment: string | null;
     recipeId: number;
     recipeTitle: string;
+    userId: string;
+    userName: string;
+    // your ReviewDto might also include user fields; add if needed
 }
-
 function RecipeDetails() {
     const { id } = useParams<{ id: string }>();
 
@@ -40,7 +43,7 @@ function RecipeDetails() {
 
         setLoadingRecipe(true);
         backend
-            .get(`${config.backendUrl}/recipes/${id}`)
+            .get<RecipeVm>(`/recipes/${id}`)
             .then((res) => setRecipe(res.data))
             .catch((err) => {
                 console.error("Error fetching recipe", err);
@@ -49,21 +52,19 @@ function RecipeDetails() {
             .finally(() => setLoadingRecipe(false));
     }, [id]);
 
-    // load reviews for this recipe
     useEffect(() => {
         if (!id) return;
 
         setLoadingReviews(true);
         backend
-            // backend route: /api/reviews/{recipeId}/reviews
-            .get(`${config.backendUrl}/reviews/${id}/reviews`)
-            .then((res) => setReviews(res.data as ReviewVm[]))
+            .get<ReviewVm[]>(`/recipes/${id}/reviews`) // ✅ correct route
+            .then((res) => setReviews(res.data))
             .catch((err) => {
                 console.error("Failed to load reviews", err);
-                // don’t kill the page if reviews fail; just log
             })
             .finally(() => setLoadingReviews(false));
     }, [id]);
+
 
     if (loadingRecipe) return <p className="text-center mt-5">Loading...</p>;
     if (error) return <p className="text-center text-danger mt-5">{error}</p>;
@@ -73,12 +74,12 @@ function RecipeDetails() {
         <div className="container recipe-details-container py-5">
             <div className="recipe-content">
                 {/* Image on the left */}
-                {recipe.imageBase64 ? (
+                {recipe.image_url ? (
                     <img
                         src={
-                            recipe.imageBase64.startsWith("data:")
-                                ? recipe.imageBase64
-                                : `data:image/jpeg;base64,${recipe.imageBase64}`
+                            recipe.image_url.startsWith("http")
+                                ? recipe.image_url
+                                : `${config.backendUrl}${recipe.image_url}`
                         }
                         alt={recipe.title}
                         className="recipe-image rounded shadow-sm"
@@ -91,14 +92,13 @@ function RecipeDetails() {
                     <h2 className="mb-3">{recipe.title}</h2>
                     <p className="text-muted mb-2">
                         <strong>Rating:</strong> ⭐{" "}
-                        {recipe.average_Rating.toFixed(1)}
+                        {recipe.average_rating.toFixed(1)}
                     </p>
                     <p className="text-muted mb-2">
-                        <strong>Status:</strong> {recipe.status}
+                        <strong>Status:</strong> {PublishStatus[recipe.publish_status]}
                     </p>
                     <p className="text-muted mb-2">
-                        <strong>Categories:</strong>{" "}
-                        {recipe.categories.join(", ")}
+                        <strong>Category:</strong> {recipe.categoryName}
                     </p>
                     <p className="mt-3 recipe-description">
                         {recipe.description}
@@ -124,15 +124,14 @@ function RecipeDetails() {
                 ) : (
                     <ul className="list-group">
                         {reviews.map((rev) => (
-                            <li
-                                key={rev.id}
-                                className="list-group-item d-flex flex-column"
-                            >
-                                <div>
+                            <li key={rev.id} className="list-group-item">
+                                <div className="d-flex justify-content-between">
                                     <strong>⭐ {rev.rating}</strong>
+                                    <span className="text-muted">@{rev.userName}</span>
                                 </div>
-                                <div>
-                                    {rev.comment && rev.comment.trim() !== ""
+
+                                <div className="mt-1">
+                                    {rev.comment?.trim()
                                         ? rev.comment
                                         : <span className="text-muted">No comment</span>}
                                 </div>

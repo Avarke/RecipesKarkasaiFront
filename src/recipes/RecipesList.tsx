@@ -5,16 +5,18 @@ import backend from "../app/backend";
 import config from "../app/config";
 import "./RecipesList.scss";
 import StarRating from "./StarRating";
+import {PublishStatus} from "./models/PublishStatus";
 
 
 interface RecipeVm {
     id: number;
     title: string;
-    description: string;
-    status: string;
-    average_Rating: number;
-    categories: string[];
-    imageBase64?: string | null;
+    description: string | null;
+    publish_status: PublishStatus;
+    average_rating: number;
+    categoryId: number;
+    categoryName: string;
+    image_url?: string | null;
 }
 
 function RecipesList() {
@@ -45,11 +47,7 @@ function RecipesList() {
             })
             .then((response) => {
                 const all = response.data as RecipeVm[];
-
-                const onlyPublic = all.filter(
-                    (r) => (r.status ?? "").toLowerCase() === "public"
-                );
-
+                const onlyPublic = all.filter(r => r.publish_status === PublishStatus.Public);
                 setRecipes(onlyPublic);
             })
             .catch((err) => {
@@ -144,26 +142,22 @@ function RecipesList() {
                         <div key={recipe.id} className="col-md-4 mb-4">
                             <div className="recipe-card card h-100">
 
-                                {recipe.imageBase64 && (
+                                {recipe.image_url && (
                                     <img
-                                        src={
-                                            recipe.imageBase64.startsWith("data:")
-                                                ? recipe.imageBase64
-                                                : `data:image/jpeg;base64,${recipe.imageBase64}`
+                                        src={recipe.image_url?.startsWith("http")
+                                            ? recipe.image_url
+                                            : `${config.backendUrl}${recipe.image_url}`
                                         }
-                                        alt={recipe.title}
                                         className="card-img-top recipe-img"
                                     />
                                 )}
 
                                 <div className="card-body">
                                     <h5 className="card-title">{recipe.title}</h5>
-                                    <div className="rating mb-2">  <StarRating rating={recipe.average_Rating} />
+                                    <div className="rating mb-2">  <StarRating rating={recipe.average_rating} />
                                     </div>
                                     <p className="categories">
-                                        {recipe.categories?.length > 0
-                                            ? recipe.categories.join(", ")
-                                            : "Uncategorized"}
+                                        {recipe.categoryName || "Uncategorized"}
                                     </p>
                                     <div className="text-end mt-3">
                                         <Link to={`/recipes/${recipe.id}`} className="btn view-btn">
