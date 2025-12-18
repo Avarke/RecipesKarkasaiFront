@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import config from "./config";
 import { refreshAccessToken, forceLogout } from "../auth/tokenService";
 import appState from "./appState";
+import {notifyFailure} from "./notify";
 
 /**
  * This module exposes a separate axios instance to be used for connections to backend.
@@ -28,7 +29,10 @@ let accessToken: string | null = null;
 
 
 
-
+let onNotFoundRedirect: (() => void) | null = null;
+export function setOnNotFoundRedirect(fn: (() => void) | null) {
+    onNotFoundRedirect = fn;
+}
 
 const backend = axios.create({
     baseURL: config.backendUrl,
@@ -62,7 +66,17 @@ backend.interceptors.response.use(
         const status = error?.response?.status;
         const originalRequest = error?.config;
 
-        if (status !== 401 || !originalRequest) {
+            if (status === 404) {
+                notifyFailure(
+                    "The requested recipe was not found or you do not have access to it."
+                );
+
+                onNotFoundRedirect?.();
+
+                return Promise.reject(error);
+            }
+
+        if ((status !== 401 && status !== 403) || !originalRequest) {
             return Promise.reject(error);
         }
         // Avoid infinite loops

@@ -109,7 +109,7 @@ function RecipeEdit() {
 
         // load recipe + categories
         Promise.all([
-            backend.get<RecipeVm>(`${config.backendUrl}/recipes/${id}`),
+            backend.get<RecipeVm>(`${config.backendUrl}/recipes/user/${id}`),
             backend.get<CategoryVm[]>(`${config.backendUrl}/categories`),
             backend.get(config.backendUrl + "/ingredients") // load dropdown
         ])

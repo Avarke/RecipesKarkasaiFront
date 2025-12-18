@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import {useEffect, useRef, useState} from 'react';
+import {BrowserRouter as Router, Routes, Route, Navigate, useNavigate} from 'react-router-dom'
 
 
 import { Toast } from 'primereact/toast';
@@ -17,7 +17,7 @@ import EntityCrud from '../entityCrud/EntityCrud';
 import RecipesList from '../recipes/RecipesList';
 import RecipeDetails from '../recipes/RecipeDetails';
 import AdminRecipeCrud from "../recipes/admin/AdminRecipeCrud";
-import {setAccessToken, setAuthenticatingBackend} from './backend';
+import {setAccessToken, setAuthenticatingBackend, setOnNotFoundRedirect} from './backend';
 import RecipeCategoryCrud from "../categories/categoryCrud/CategoryCrud";
 import ReviewCrud from "../reviews/admin/AdminReviewCrud";
 import UserRecipeCrud from "../recipes/user/UserRecipeCrud";
@@ -38,6 +38,17 @@ class State {
 
 
 function CategoryCrud() {
+    return null;
+}
+
+function Api404Redirector() {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        setOnNotFoundRedirect(() => navigate("/recipes", { replace: true }));
+        return () => setOnNotFoundRedirect(null);
+    }, [navigate]);
+
     return null;
 }
 
@@ -166,6 +177,7 @@ function App() {
 	//render component HTML
 	let html =
 		<Router>
+            <Api404Redirector />
 			<NavMenu/>
 			<Toast ref={toastRef} position="top-right"/>
 			<div className="shadow-sm bg-body rounded flex-grow-1 p-1">

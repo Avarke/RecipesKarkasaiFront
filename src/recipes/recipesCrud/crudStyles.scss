@@ -1,0 +1,7 @@
+@use '../../styles/imports' as *;
+
+.h2 {
+  .text-primary {
+    color: $brand-color !important;
+  }
+}
