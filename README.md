@@ -4,6 +4,8 @@ A React.js frontend application for the **Recipes API**, allowing users to brows
 
 This project is designed to work together with the **Recipes API backend** (ASP.NET Core).
 
+Ataskaita: https://drive.google.com/file/d/1inThoJdhCKSiTe06d2T619ivBUiFUPku/view?usp=sharing
+
 ---
 
 ## Features
